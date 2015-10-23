@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="20fec902-3dc7-45c8-9143-bccc6291da99" name="Default" comment="" />
+    <list default="true" id="20fec902-3dc7-45c8-9143-bccc6291da99" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/core/models.py" afterPath="$PROJECT_DIR$/core/models.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/vcs.xml" afterPath="$PROJECT_DIR$/.idea/vcs.xml" />
+    </list>
     <ignored path="eia.iws" />
     <ignored path=".idea/workspace.xml" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -24,10 +27,17 @@
       <file leaf-file-name="models.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/core/models.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.43468952">
-              <caret line="101" column="31" selection-start-line="101" selection-start-column="31" selection-end-line="101" selection-end-column="31" />
+            <state vertical-scroll-proportion="-0.72347265">
+              <caret line="122" column="0" selection-start-line="122" selection-start-column="0" selection-end-line="122" selection-end-column="0" />
               <folding>
                 <element signature="e#0#40#0" expanded="true" />
+                <element signature="e#123#345#0" expanded="false" />
+                <element signature="e#385#575#0" expanded="false" />
+                <element signature="e#611#1665#0" expanded="false" />
+                <element signature="e#1714#2001#0" expanded="false" />
+                <element signature="e#2048#2343#0" expanded="false" />
+                <element signature="e#2381#2959#0" expanded="false" />
+                <element signature="e#2997#3188#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -138,6 +148,9 @@
       </list>
     </option>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
@@ -164,7 +177,7 @@
     <option name="width" value="1932" />
     <option name="height" value="1092" />
   </component>
-  <component name="ProjectLevelVcsManager" settingsEditedManually="false">
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <OptionsSetting value="true" id="Add" />
     <OptionsSetting value="true" id="Remove" />
     <OptionsSetting value="true" id="Checkout" />
@@ -404,7 +417,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1932" height="1092" extended-state="1" />
+    <frame x="-8" y="-8" width="1932" height="1092" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.17634636" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -440,7 +453,7 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="11" />
+      <option name="time" value="21" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -451,6 +464,13 @@
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#0#40#0" expanded="true" />
+            <element signature="e#123#345#0" expanded="false" />
+            <element signature="e#385#575#0" expanded="false" />
+            <element signature="e#611#1665#0" expanded="false" />
+            <element signature="e#1714#2001#0" expanded="false" />
+            <element signature="e#2048#2343#0" expanded="false" />
+            <element signature="e#2381#2959#0" expanded="false" />
+            <element signature="e#2997#3188#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -521,6 +541,13 @@
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#0#40#0" expanded="true" />
+            <element signature="e#123#345#0" expanded="false" />
+            <element signature="e#385#575#0" expanded="false" />
+            <element signature="e#611#1665#0" expanded="false" />
+            <element signature="e#1714#2001#0" expanded="false" />
+            <element signature="e#2048#2343#0" expanded="false" />
+            <element signature="e#2381#2959#0" expanded="false" />
+            <element signature="e#2997#3188#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -621,10 +648,17 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/core/models.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.43468952">
-          <caret line="101" column="31" selection-start-line="101" selection-start-column="31" selection-end-line="101" selection-end-column="31" />
+        <state vertical-scroll-proportion="-0.72347265">
+          <caret line="122" column="0" selection-start-line="122" selection-start-column="0" selection-end-line="122" selection-end-column="0" />
           <folding>
             <element signature="e#0#40#0" expanded="true" />
+            <element signature="e#123#345#0" expanded="false" />
+            <element signature="e#385#575#0" expanded="false" />
+            <element signature="e#611#1665#0" expanded="false" />
+            <element signature="e#1714#2001#0" expanded="false" />
+            <element signature="e#2048#2343#0" expanded="false" />
+            <element signature="e#2381#2959#0" expanded="false" />
+            <element signature="e#2997#3188#0" expanded="false" />
           </folding>
         </state>
       </provider>

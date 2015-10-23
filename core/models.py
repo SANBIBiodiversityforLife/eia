@@ -3,6 +3,7 @@ from django.core.urlresolvers import reverse
 
 
 class Developer(models.Model):
+    """The companies who run the projects."""
     name = models.CharField(max_length=100)
     email = models.CharField(max_length=50)
     phone = models.CharField(max_length=15)
@@ -12,12 +13,15 @@ class Developer(models.Model):
 
 
 class TurbineMake(models.Model):
+    """Normalising the turbine make to avoid typos and to make it easier to search by turbine make."""
     make = models.CharField(max_length=50)
 
     def __str__(self):
         return self.make
 
+
 class Project(models.Model):
+    """A renewable energy development."""
     current_name = models.CharField(max_length=50)
     current_developer = models.ForeignKey(Developer)
     location = models.PolygonField()
@@ -48,18 +52,31 @@ class Project(models.Model):
 
 
 class PreviousProjectNames(models.Model):
+    """
+    Renewable energy projects frequently change name. A list of all the previous names needs to be held for search
+    purposes.
+    """
     previous_name = models.CharField(max_length=50)
     project = models.ForeignKey(Project)
     stopped = models.DateTimeField(auto_now_add=True)
 
 
 class PreviousDevelopers(models.Model):
+    """
+    Developers go bust and change projects, so we need to keep historical records of all the developers who worked on
+    a particular project.
+    """
     developer = models.ForeignKey(Developer)
     project = models.ForeignKey(Project)
     stopped = models.DateTimeField(auto_now_add=True)
 
 
 class Documents(models.Model):
+    """
+    Scanned in documents should be uploadable.
+    Note that DEA are collecting EIA reports separately, but until we get the two linked up this can be used to store
+    EIA reports as well.
+    """
     name = models.CharField(max_length=20)
     project = models.ForeignKey(Project)
     uploaded = models.DateTimeField(auto_now_add=True)
@@ -75,65 +92,39 @@ class Documents(models.Model):
 
 
 class TaxaOrder(models.Model):
+    """Currently this tool just services birds and bats, but more orders might get added in the future."""
     order = models.CharField(max_length=20)  # Saurischia = birds, Laurasiatheria = bats
 
 
 class Taxa(models.Model):
-    '''
-    ' Holds a list of all of current names and statuses of the Southern African birds and bats
-    ' Should get synchronised regularly with a master list. For this reason genus has not been normalised
-    ' Order determines whether a species is a bird or a bat
-    '''
+    """
+    Holds a list of all of current names and statuses of the Southern African birds and bats.
+    Should get synchronised regularly with a master list. For this reason genus has not been normalised.
+    Order determines whether a species is a bird or a bat.
+    """
     order = models.ForeignKey(TaxaOrder)
     genus = models.CharField(max_length=20)
     species = models.CharField(max_length=20)
     added = models.DateTimeField(auto_now_add=True)
-
-
-class DataSet(models.Model):
-    models.ForeignKey(Project)
-    objects = models.GeoManager()
-    collected_to = models.DateTimeField()
-    collected_from = models.DateTimeField()
-    flagged_for_query = models.BooleanField(default=False)
-    # TODO uploader =
-
-    PRE_CONSTRUCTION = 'PRE'
-    DURING_CONSTRUCTION = 'DUR'
-    POST_CONSTRUCTION = 'POS'
-    project_status_choices = (
-        (PRE_CONSTRUCTION, 'Pre-construction data'),
-        (DURING_CONSTRUCTION, 'During-construction data'),
-        (POST_CONSTRUCTION, 'Post-construction data')
+    red_list_choices = (
+        ('EX', 'Extinct'),
+        ('EW', 'Extinct in the Wild'),
+        ('CR', 'Critically Endangered'),
+        ('EN', 'Endangered'),
+        ('VU', 'Vulnerable'),
+        ('NT', 'Near Threatened'),
+        ('LC', 'Least Concern'),
+        ('DD', 'Least Concern')
     )
-    project_status = models.CharField(max_length=1, choices=project_status_choices)
-
-    population_data = models.ForeignKey(PopulationData, null=True, blank=True)
-    focal_site_data = models.ForeignKey(FocalSiteData, null=True, blank=True)
-    fatality_data = models.ForeignKey(FatalityData, null=True, blank=True)
-
-
-class PopulationData(models.Model):
-    dataset = models.ForeignKey(DataSet)
-    taxa = models.ForeignKey(Taxa)
-    count = models.IntegerField()  # Actual number counted / for bats this activity levels
-
-    COLLISION_HIGH = 'H'
-    COLLISION_MEDIUM = 'M'
-    COLLISION_LOW = 'L'
-    collision_risk_choices = (
-        (COLLISION_HIGH, 'High risk of collision'),
-        (COLLISION_MEDIUM, 'Medium risk of collision'),
-        (COLLISION_LOW, 'Low risk of collision')
-    )
-    collision_risk = models.CharField(max_length=1, choices=collision_risk_choices)
-
-    # Birds only:
-    density_km = models.IntegerField()  # Estimate of density per km^2
-    passage_rate = models.IntegerField()  # Number passing through area per hour
+    red_list = models.CharField(max_length=1, choices=red_list_choices)
+    sensitive = models.BooleanField(default=False)
 
 
 class FocalSite(models.Model):
+    """
+    Focal sites are locations of particular interest in projects.
+    Data is collected and stored against each focal site.
+    """
     location = models.PolygonField()
     name = models.CharField(max_length=50)
     order = models.ForeignKey(TaxaOrder)
@@ -186,8 +177,47 @@ class FocalSite(models.Model):
     habitat = models.CharField(max_length=2, choices=habitat_choices)
 
 
+class MetaData(models.Model):
+    """
+    Metadata for the 3 different types of datasets - population data, focal site data, fatality data
+    """
+    models.ForeignKey(Project)
+    objects = models.GeoManager()
+    collected_to = models.DateTimeField()
+    collected_from = models.DateTimeField()
+    flagged_for_query = models.BooleanField(default=False)
+    control_data = models.BooleanField(default=False)
+    # TODO uploader =
+
+
+class PopulationData(models.Model):
+    """
+    Census, focal point & transect data form a population count/estimate
+    """
+    metadata = models.ForeignKey(MetaData)
+    taxa = models.ForeignKey(Taxa)
+    count = models.IntegerField()  # Actual number counted / for bats this activity levels
+
+    COLLISION_HIGH = 'H'
+    COLLISION_MEDIUM = 'M'
+    COLLISION_LOW = 'L'
+    collision_risk_choices = (
+        (COLLISION_HIGH, 'High risk of collision'),
+        (COLLISION_MEDIUM, 'Medium risk of collision'),
+        (COLLISION_LOW, 'Low risk of collision')
+    )
+    collision_risk = models.CharField(max_length=1, choices=collision_risk_choices)
+
+    # Birds only:
+    density_km = models.IntegerField()  # Estimate of density per km^2
+    passage_rate = models.IntegerField()  # Number passing through area per hour
+
+
 class FocalSiteData(models.Model):
-    dataset = models.ForeignKey(DataSet)
+    """
+    Records activity for a particular focal site
+    """
+    metadata = models.ForeignKey(MetaData)
     taxa = models.ForeignKey(Taxa)
     focal_site = models.ForeignKey(FocalSite)
     count = models.IntegerField()
@@ -215,7 +245,10 @@ class FocalSiteData(models.Model):
 
 
 class FatalityData(models.Model):
-    dataset = models.ForeignKey(DataSet)
+    """
+    Records fatalities
+    """
+    metadata = models.ForeignKey(MetaData)
     taxa = models.ForeignKey(Taxa)
     coordinate = models.PointField()
 
