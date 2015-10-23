@@ -1,0 +1,36 @@
+"""eia URL Configuration
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/1.8/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  url(r'^$', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  url(r'^$', Home.as_view(), name='home')
+Including another URLconf
+    1. Add an import:  from blog import urls as blog_urls
+    2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
+"""
+from django.conf.urls import include, url
+from django.contrib import admin
+from core import views
+
+urlpatterns = [
+    url(r'^admin/', include(admin.site.urls)),
+    url(r'^projects$', views.ProjectList.as_view(), name='project_list'),
+
+    # Project related URLs
+    url(r'^project/(?P<pk>[0-9]+)$', views.ProjectDetail.as_view(), name='project_detail'),
+    url(r'^project/create$', views.ProjectCreate.as_view(), name='project_create'),
+    url(r'^project/update/(?P<pk>[0-9]+)$', views.ProjectUpdate.as_view(), name='project_update'),
+    url(r'^project_delete/(?P<pk>[0-9]+)$', views.ProjectDelete.as_view(), name='project_delete'),
+
+    # Data related URLs
+    url(r'^project/(?P<project_pk>[0-9]+)/data', views.DataList.as_view(), name='data_list'),
+    #url(r'^project/(?P<project_pk>[0-9]+)/data/(?P<pk>[0-9]+)', views.DataDetail.as_view(), name='data_detail'),
+    url(r'^project/(?P<project_pk>[0-9]+)/data_create', views.DataCreate.as_view(), name='data_create'),
+    #url(r'^project/(?P<project_pk>[0-9]+)/data_update/(?P<pk>[0-9]+)', views.DataDetail.as_view(), name='data_update'),
+    #url(r'^project/(?P<project_pk>[0-9]+)/data/(?P<pk>[0-9]+)', views.DataDetail.as_view(), name='data_delete')'''
+]

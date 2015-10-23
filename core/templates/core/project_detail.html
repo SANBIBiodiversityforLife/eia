@@ -1,0 +1,5 @@
+{% extends "core/_base.html" %}
+{% block content %}
+<h1>{{ project }} : {{ project.id }}</h1>
+<p><a href="{% url 'data_create' project.id %}">Add data</a></p>
+{% endblock content %}
