@@ -14,7 +14,7 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+#BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
 # Quick-start development settings - unsuitable for production
@@ -105,7 +105,7 @@ TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
-USE_L10N = True
+USE_L10N = False
 
 USE_TZ = True
 
@@ -114,3 +114,19 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
 
 STATIC_URL = '/static/'
+
+DATETIME_INPUT_FORMATS = ('%Y-%m-%d %H:%M',
+                          '%d %b %Y (%A) %H:%M',
+                          '%Y-%m-%d %H:%M:%S',     # '2006-10-25 14:30:59'
+                          '%Y-%m-%d %H:%M',        # '2006-10-25 14:30'
+                          '%Y/%m/%d %H:%M',        # '2014/10/28 17:30'
+                          '%Y-%m-%d',              # '2006-10-25'
+                          '%m/%d/%Y %H:%M:%S',     # '10/25/2006 14:30:59'
+                          '%m/%d/%Y %H:%M',        # '10/25/2006 14:30'
+                          '%m/%d/%Y',              # '10/25/2006'
+                          '%m/%d/%y %H:%M:%S',     # '10/25/06 14:30:59'
+                          '%m/%d/%y %H:%M',        # '10/25/06 14:30'
+                          '%m/%d/%y'
+                          )
+
+DATETIME_FORMAT='j N P'

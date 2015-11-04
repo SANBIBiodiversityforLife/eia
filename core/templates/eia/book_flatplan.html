@@ -1,0 +1,99 @@
+{% extends "pubblesite/_base_book.html" %}
+{% load add_css %}
+{% load staticfiles %}
+
+{% block css %}
+<!-- cdn: //cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/css/bootstrap-editable.css -->
+<link href="{% static 'js/bootstrap-editable.css' %}" rel="stylesheet"/>
+{% endblock %}
+
+{% block tab-content %}
+<form method="post" role="form" class="form" id="flatplan-form">{% csrf_token %}
+  {% for hidden in form.hidden_fields %}
+  {{ hidden }}
+  {% endfor %}
+  <div class="row">
+    <h2 class="col-sm-12">Edit flatplan <small>Current number of pages: <strong id="book-pages"></strong></small>
+        <button type="button" class="btn btn-info btn-sm add-page">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add another page
+        </button>
+    <button type="submit" class="btn btn-primary btn-lg save-flatplan" id="submit-button">
+        <span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Save flatplan
+    </button>
+    </h2>
+  </div>
+  <div class="row">
+    <div class="col-sm-12">
+        <div id="flatplan-container">
+            <div id="flatplan">
+                <div class="item unsortable placeholder"></div>
+            </div>
+        </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block js %}
+<script src='{% static "js/packery.pkgd.js" %}'></script>
+<script src='{% static "js/jquery-ui/jquery-ui.min.js" %}'></script>
+<!-- cdn: //cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/js/bootstrap-editable.min.js -->
+<script src="{% static 'js/bootstrap-editable.min.js' %}"></script>
+<script src='{% static "js/flatplan.js" %}'></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        // Flatplanify the place up! This creates a flatplan of a bunch of divs which look like pages on the page
+        var section_pages_data = $('#id_section_pages').val();
+        flatplanify({{ book.extent }},
+                    jQuery.parseJSON(section_pages_data),
+                    {{ book.endlims_page }},
+                    "{{ book.get_section_prefix_display }}",
+                     {{ book.flatplan_text|safe }}
+        );
+
+        // We need to save the flatplan. Change the form hidden fields in order to update various the book and section models
+        $('#flatplan-form').submit(function(event) {
+            update_form();
+        });
+
+        function update_form() {
+            // Number of pages is easy
+            $('#id_extent').val($('#book-pages').text());
+
+            // But we have to iterate through all the section pages to get their numbers
+            var section_pages_data = {};
+            $.each($('#flatplan-container .section .number'), function(index, element) {
+                // If we're on the last one then store the endlims page
+                if(index + 1 == $('#flatplan-container .section .number').length)
+                    $('#id_endlims_page').val($(element).attr('data-number'));
+                // Otherwise if it's not the title store the page number for the section
+                else if(index != 0)
+                    section_pages_data[index] = parseInt($(element).attr('data-number'));
+                    //section_pages_data[$(element).attr('data-number')] = index;
+            });
+            $('#id_section_pages').val(JSON.stringify(section_pages_data));
+
+            // And we have to get all the text in the same way
+            var flatplan_text = {};
+            $.each($('#flatplan-container .item>span.content:not(.editable-empty)'), function(index, element) {
+                flatplan_text[$(element).next('.number').attr('data-number')] = $(element).text();
+            });
+            $('#id_flatplan_text').val(JSON.stringify(flatplan_text));
+        }
+
+        $(window).bind('beforeunload', function(){
+            // $('#flatplan-form').data('serialize', $('#flatplan-form').serialize());
+
+            // Stuff gets serialized in a weird way, sometimes with spaces and sometimes with commas in the wrong place
+            // So just remove the spaces and commas from the serialization, compare the 2, and if they're different...
+            old_serialized = $('#flatplan-form').serialize().replace(/\+/g, '').replace(/%2C/g, '');
+            update_form();
+            new_serialized = $('#flatplan-form').serialize().replace(/\+/g, '').replace(/%2C/g, '');
+            // Then prompt asking if they are sure they want to navigate away
+            if(old_serialized != new_serialized) {
+                return 'There are unsaved changes to this flatplan.';
+            }
+        });
+    });
+</script>
+{% endblock %}

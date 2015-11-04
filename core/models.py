@@ -1,5 +1,6 @@
 from django.contrib.gis.db import models
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ValidationError
 
 
 class Developer(models.Model):
@@ -45,7 +46,7 @@ class Project(models.Model):
     turbine_height = models.IntegerField(null=True, blank=True)
 
     def get_absolute_url(self):
-        return reverse('project', kwargs={'pk': self.pk})
+        return reverse('project_detail', kwargs={'pk': self.pk})
 
     def __str__(self):
         return self.current_name
@@ -95,17 +96,30 @@ class TaxaOrder(models.Model):
     """Currently this tool just services birds and bats, but more orders might get added in the future."""
     order = models.CharField(max_length=20)  # Saurischia = birds, Laurasiatheria = bats
 
+    def __str__(self):
+        return self.order
+
 
 class Taxa(models.Model):
     """
     Holds a list of all of current names and statuses of the Southern African birds and bats.
-    Should get synchronised regularly with a master list. For this reason genus has not been normalised.
-    Order determines whether a species is a bird or a bat.
+    Should get synchronised regularly with a master list. For this reason taxa info has not been normalised.
     """
+    # Determines whether a species is a bird or a bat. This is in a separate table because focal sites are also bird/bat
     order = models.ForeignKey(TaxaOrder)
+
+    # Long debate with myself & Fhatani about whether to separate out family & genus into extra tables to normalise
+    # But as no data is ever input by users into the taxa info, and as this info is always coming from a verified
+    # source and is strictly controlled I am going to assume it is always clean and correct. Plus size should be
+    # under 5000 records so no speed issues/db size issues to speak of.
+    family = models.CharField(max_length=20)
     genus = models.CharField(max_length=20)
     species = models.CharField(max_length=20)
-    added = models.DateTimeField(auto_now_add=True)
+
+    # It is important to know when this name was last updated
+    updated = models.DateTimeField(auto_now_add=True)
+
+    # Not sure where this red list stuff is going to come from, IUCN?
     red_list_choices = (
         ('EX', 'Extinct'),
         ('EW', 'Extinct in the Wild'),
@@ -118,6 +132,12 @@ class Taxa(models.Model):
     )
     red_list = models.CharField(max_length=1, choices=red_list_choices)
     sensitive = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('family', 'genus', 'species')
+
+    def __str__(self):
+        return self.genus + ' ' + self.species
 
 
 class FocalSite(models.Model):
@@ -181,13 +201,28 @@ class MetaData(models.Model):
     """
     Metadata for the 3 different types of datasets - population data, focal site data, fatality data
     """
-    models.ForeignKey(Project)
+    project = models.ForeignKey(Project)
     objects = models.GeoManager()
     collected_to = models.DateTimeField()
     collected_from = models.DateTimeField()
     flagged_for_query = models.BooleanField(default=False)
     control_data = models.BooleanField(default=False)
     # TODO uploader =
+
+    # Following two functions are taken from
+    # http://stackoverflow.com/questions/7366363/adding-custom-django-model-validation
+    # See also the docs https://docs.djangoproject.com/en/1.8/ref/models/instances/
+    def clean(self):
+        if self.collected_from >= self.collected_to:
+            raise ValidationError({'collected_from': 'The collected from date must be earlier than the to date'})
+        super(MetaData, self).clean()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super(MetaData, self).save(*args, **kwargs)
+
+    class Meta:
+        unique_together = ('collected_to', 'collected_from', 'control_data')
 
 
 class PopulationData(models.Model):
@@ -209,8 +244,14 @@ class PopulationData(models.Model):
     collision_risk = models.CharField(max_length=1, choices=collision_risk_choices)
 
     # Birds only:
-    density_km = models.IntegerField()  # Estimate of density per km^2
-    passage_rate = models.IntegerField()  # Number passing through area per hour
+    density_km = models.DecimalField(max_digits=10, decimal_places=5)  # Estimate of density per km^2
+    passage_rate = models.DecimalField(max_digits=7, decimal_places=2)  # Number passing through area per hour
+
+    def get_absolute_url(self):
+        return reverse('project_detail', kwargs={'pk': self.pk})
+
+    def __str__(self):
+        return self.current_name
 
 
 class FocalSiteData(models.Model):

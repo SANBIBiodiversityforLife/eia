@@ -19,18 +19,22 @@ from core import views
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^projects$', views.ProjectList.as_view(), name='project_list'),
+    url(r'^projects/$', views.ProjectList.as_view(), name='project_list'),
 
     # Project related URLs
-    url(r'^project/(?P<pk>[0-9]+)$', views.ProjectDetail.as_view(), name='project_detail'),
-    url(r'^project/create$', views.ProjectCreate.as_view(), name='project_create'),
-    url(r'^project/update/(?P<pk>[0-9]+)$', views.ProjectUpdate.as_view(), name='project_update'),
-    url(r'^project_delete/(?P<pk>[0-9]+)$', views.ProjectDelete.as_view(), name='project_delete'),
+    url(r'^project/(?P<pk>[0-9]+)$/', views.ProjectDetail.as_view(), name='project_detail'),
+    url(r'^project/create/$', views.ProjectCreate.as_view(), name='project_create'),
+    url(r'^project/update/(?P<pk>[0-9]+)/$', views.ProjectUpdate.as_view(), name='project_update'),
+    url(r'^project_delete/(?P<pk>[0-9]+)/$', views.ProjectDelete.as_view(), name='project_delete'),
+
+    # Developer
+    url(r'^developer/create/$', views.DeveloperCreate.as_view(), name='developer_create'),
 
     # Data related URLs
-    url(r'^project/(?P<project_pk>[0-9]+)/data', views.DataList.as_view(), name='data_list'),
-    #url(r'^project/(?P<project_pk>[0-9]+)/data/(?P<pk>[0-9]+)', views.DataDetail.as_view(), name='data_detail'),
-    url(r'^project/(?P<project_pk>[0-9]+)/data_create', views.DataCreate.as_view(), name='data_create'),
-    #url(r'^project/(?P<project_pk>[0-9]+)/data_update/(?P<pk>[0-9]+)', views.DataDetail.as_view(), name='data_update'),
-    #url(r'^project/(?P<project_pk>[0-9]+)/data/(?P<pk>[0-9]+)', views.DataDetail.as_view(), name='data_delete')'''
+    url(r'^project/(?P<project_pk>[0-9]+)/data/', views.DataList.as_view(), name='data_list'),
+    url(r'^project/(?P<project_pk>[0-9]+)/population_data/create/', views.PopulationDataCreateView.as_view(), name='population_data_create'),
+    #url(r'^project/(?P<project_pk>[0-9]+)/population_data/create/', views.create_population_data, name='population_data_create'),
+
+    url(r'^focal_site/create/$', views.FocalSiteCreate.as_view(), name='focal_site_create'),
+    url(r'^focal_site_data/create/$', views.FocalSiteDataCreate.as_view(), name='focal_site_data_create'),
 ]

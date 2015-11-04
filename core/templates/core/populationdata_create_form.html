@@ -1,0 +1,41 @@
+{% extends "core/_base.html" %}
+{% load leaflet_tags %}
+{% load static %}
+
+{% block css %}
+<link href='{% static "datetimepicker/jquery.datetimepicker.css" %}' rel="stylesheet">
+{% endblock css %}
+
+{% block heading %}Upload population data{% endblock heading %}
+
+{% block content %}
+<form enctype="multipart/form-data" action="" method="post">{% csrf_token %}
+    {% for field in form %}
+        {% if field.name == "data" %}
+            <p class="alert alert-success" role="alert">You need to upload count/population density data for each species you observed. This information must be entered into the system in a very specific format.</p>
+            <ol>
+                <li><a href='{% static "population_data_for_upload.xlsx" %}' role="button" class="btn btn-primary">Download the template spreadsheet</a></li>
+                <li>If a yellow, "protected" message comes up, click 'enable editing' on the spreadsheet</li>
+                <li>Fill in your data in all of the relevant columns</li>
+                <li>Upload the spreadsheet back onto the server: {{ field }}. {{ field.errors }}</li>
+            </ol>
+        {% else %}
+            <div class="form-group">
+                {{ field.label }} {{ field }}
+            </div>
+            {{ field.errors }}
+        {% endif %}
+    {% endfor %}
+    <input type="submit" value="Add data to project" />
+</form>
+{% endblock content %}
+
+{% block js %}
+<script src='{% static "datetimepicker/jquery.datetimepicker.js" %}'></script>
+<script language="javascript">
+  $(document).ready(function() {
+    $('.datepicker').datetimepicker({step:30});
+    console.log('hi');
+  })
+</script>
+{% endblock %}
