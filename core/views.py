@@ -3,13 +3,136 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, FormView
 from core import models, forms
-import xlsxwriter
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.http import HttpResponseRedirect, HttpResponse
 
+from openpyxl import Workbook
+from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.styles import PatternFill, Protection, Font
+from openpyxl.cell import get_column_letter
 
 def create_population_data_spreadsheet():
-    # TODO when you have time see if you can make this work with openpyxl?
+    # Create the workbook
+    wb = Workbook()
+
+    # Create the template spreadsheet
+    ws = wb.active
+    ws.sheet_properties.tabColor = "1072BA"
+
+    # Store formats
+    heading = Font(bold=True)
+    protected = Protection(locked=True, hidden=False)
+
+    # Add the column + validation
+    ws['A1'] = 'genus'
+    ws['B1'] = 'species'
+    ws['C1'] = 'count'
+    ws['D1'] = 'collision_risk'
+    ws['E1'] = 'density_km'
+    ws['F1'] = 'passage_rate'
+    ws.row_dimensions[1].font = heading
+    ws.row_dimensions[1].protection = protected
+
+    # Get a list of the valid species & genera for validation
+    genera = sorted(list(models.Taxa.objects.values_list('genus', flat=True).distinct()))
+    species = sorted(list(models.Taxa.objects.values_list('species', flat=True).distinct()))
+
+    # Create additional sheets to hold them
+    genus_validation_sheet = wb.create_sheet()
+    genus_validation_sheet.title = 'Valid Genera'
+    species_validation_sheet = wb.create_sheet()
+    species_validation_sheet.title = 'Valid Species'
+
+    # Population the cells
+    for i, g in enumerate(genera, 1):
+        genus_validation_sheet.cell(row=i, column=1, value=g)
+    for i, s in enumerate(species, 1):
+        species_validation_sheet.cell(row=i, column=1, value=s)
+
+
+    # Lock the validation sheets so they cannot be tampered with
+    species_validation_sheet.protection.enable()
+    genus_validation_sheet.protection.enable()
+
+    # Create & add the validation
+    genera_dv = DataValidation(
+        type='list',
+        formula1="='Valid Genera'!A1:A" + str(len(genera)),
+        error='Invalid genus. Please see the "Valid Genera" sheet to view allowed genera.',
+        promptTitle='Restricted list',
+        prompt='Please see the "Valid Genera" sheet to view allowed genera.'
+    )
+    species_dv = DataValidation(
+        type='list',
+        formula1="='Valid Species'!A1:A" + str(len(species)),
+        error='Invalid genus. Please see the "Valid Species" sheet to view allowed species.',
+        promptTitle='Restricted list',
+        prompt='Please see the "Valid Species" sheet to view allowed species.'
+    )
+    ws.add_data_validation(genera_dv)
+    ws.add_data_validation(species_dv)
+    genera_dv.ranges.append('A2:A1048576')
+    species_dv.ranges.append('B2:B1048576')
+
+    # Add the list validation
+    collision_risk_dv = DataValidation(
+        type="list",
+        formula1='"High,Medium,Low"',
+        promptTitle='Restricted list',
+        prompt='Please enter either: "High", "Medium" or "Low".',
+        error='Invalid collision risk. Please enter either: "High", "Medium" or "Low".'
+    )
+    ws.add_data_validation(collision_risk_dv)
+    collision_risk_dv.ranges.append('D2:D1048576')
+
+    # Add the number validation
+    count_dv = DataValidation(
+        type='whole',
+        operator='greaterThan',
+        formula1=0,
+        prompt='Please enter a whole number greater than 0.',
+        error='Invalid. Please enter a whole number greater than 0.'
+    )
+    ws.add_data_validation(count_dv)
+    count_dv.ranges.append('C2:C1048576')
+    density_km_dv = DataValidation(  # operator="between", formula1=0, formula2=1
+        type='decimal',
+        operator='greaterThan',
+        formula1=0.01,
+        prompt='Please enter a number greater than 0.',
+        error='Invalid. Please enter a number greater than 0.'
+    )
+    ws.add_data_validation(density_km_dv)
+    density_km_dv.ranges.append('E1:E1048576')
+    passage_rate_dv = DataValidation(
+        type='whole',
+        operator='greaterThan',
+        formula1=0,
+        prompt='Please enter a whole number greater than 0.',
+        error='Invalid. Please enter a whole number greater than 0.'
+    )
+    ws.add_data_validation(passage_rate_dv)
+    passage_rate_dv.ranges.append('F2:F1048576')
+
+    # Set column widths
+    column_widths = []
+    for row in ws:
+        for i, cell in enumerate(row):
+            if len(column_widths) > i:
+                if len(cell.value) > column_widths[i]:
+                    column_widths[i] = len(cell.value) + 10
+            else:
+                column_widths += [len(cell.value) + 10]
+
+    for i, column_width in enumerate(column_widths):
+        ws.column_dimensions[get_column_letter(i+1)].width = column_width
+
+    # Close & save
+    wb.save('core' + static('population_data_for_upload.xlsx'))
+
+
+def create_population_data_spreadsheet_old():
+    # TODO when you have time see if you can make this work with openpyxl? http://openpyxl.readthedocs.org/en/latest/validation.html
     # Create the workbook
     workbook = xlsxwriter.Workbook('core' + static('population_data_for_upload.xlsx'))
 

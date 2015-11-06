@@ -52,4 +52,3 @@ docs/_build/
 *.pyc
 .idea
 .idea/*
-# Adding the migration files

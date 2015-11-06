@@ -7,7 +7,7 @@ from core.models import Project, PopulationData, Taxa, TaxaOrder, FocalSite, Foc
 from core import validators
 from openpyxl import load_workbook
 #from django.contrib.staticfiles.templatetags.staticfiles import static
-from openpyxl.styles import Color, Fill
+from openpyxl.styles import Color, Fill, Style, fills, PatternFill
 
 class ProjectCreateForm(forms.ModelForm):
     class Meta:
@@ -103,14 +103,16 @@ class MetaDataCreateForm(forms.ModelForm):
             collision_risk = row[3].value
             density_km = row[4].value
             passage_rate = row[5].value
-            #import pdb; pdb.set_trace()
+            import pdb; pdb.set_trace()
 
             # Try and retrieve the taxa based on genus + species
             try:
                 taxa = Taxa.objects.get(genus=genus, species=species)
             except Taxa.DoesNotExist:
-                row[6] = 'Error with genus/species - does not exist. Please check and correct.'
-                row[6].style.fill.fill_type = Fill.FILL_SOLID
+                # TODO error here 'tuple' object does not support item assignment when trying to write to cells like this
+                main_sheet.cell(column=7, row=row[0].row, value='Error with genus/species - does not exist. Please check and correct.')
+                Style(fill=PatternFill(patternType='solid', fgColor=Color('FFFF0000')))
+                main_sheet.cell(column=7, row=row[0].row).style.fill.fill_type = Fill.FILL_SOLID
                 row[6].style.fill.start_color.index = Color.DARKRED
                 uploaded_data.save('C:/test.xlsx')
 
