@@ -8,6 +8,7 @@ from core import validators
 from openpyxl import load_workbook
 #from django.contrib.staticfiles.templatetags.staticfiles import static
 from openpyxl.styles import Color, Fill, Style, fills, PatternFill
+from django.core.exceptions import ValidationError
 
 class ProjectCreateForm(forms.ModelForm):
     class Meta:
@@ -56,6 +57,10 @@ class PopulationDataCreateForm(forms.ModelForm):
         fields = ('taxa', 'count', 'collision_risk', 'metadata', 'density_km', 'passage_rate')
 
 
+def write_error(main_sheet, row_number, error_message):
+    main_sheet.cell(column=7, row=row_number, value=error_message)
+    main_sheet.cell(column=7, row=row_number).style = Style(fill=PatternFill(patternType='solid', fgColor=Color('FFFF0000')))
+
 class MetaDataCreateForm(forms.ModelForm):
     upload_data = forms.FileField(
         label=mark_safe('Ready? Upload the filled-in spreadsheet'),
@@ -86,13 +91,8 @@ class MetaDataCreateForm(forms.ModelForm):
         # Get the correct sheet - TODO how are we going to stop them from renaming the sheet?
         main_sheet = uploaded_data.get_sheet_by_name("Main")
 
-        # Create the metadata object and store it to get its primary key
-        # This must get deleted after this function if no actual data is stored
-        self.instance.project = Project.objects.get(pk=project_pk)
-        metadata = self.instance.save()
-
         # Keep track of the errors somehow
-        rows_with_errors = []
+        row_with_error_count = 0
 
         # Loop through the rows in the sheet
         for row in main_sheet.iter_rows(row_offset=1):
@@ -103,30 +103,54 @@ class MetaDataCreateForm(forms.ModelForm):
             collision_risk = row[3].value
             density_km = row[4].value
             passage_rate = row[5].value
-            import pdb; pdb.set_trace()
+
+            # If all of these are blank, (i.e., none have a value), then ignore this row
+            if not(genus or species or count or collision_risk or density_km or passage_rate):
+                continue
+
+            # If any of these are blank (i.e. any don't have a value), throw up an error and get them to fill it in
+            if not(genus and species and count and collision_risk and density_km and passage_rate):
+                write_error(main_sheet=main_sheet,
+                            row_number=row[0].row,
+                            error_message='Incomplete row. All the fields must be filled out.')
+                row_with_error_count += row_with_error_count
+                continue
 
             # Try and retrieve the taxa based on genus + species
             try:
                 taxa = Taxa.objects.get(genus=genus, species=species)
             except Taxa.DoesNotExist:
-                # TODO error here 'tuple' object does not support item assignment when trying to write to cells like this
-                main_sheet.cell(column=7, row=row[0].row, value='Error with genus/species - does not exist. Please check and correct.')
-                Style(fill=PatternFill(patternType='solid', fgColor=Color('FFFF0000')))
-                main_sheet.cell(column=7, row=row[0].row).style.fill.fill_type = Fill.FILL_SOLID
-                row[6].style.fill.start_color.index = Color.DARKRED
-                uploaded_data.save('C:/test.xlsx')
+                write_error(main_sheet=main_sheet,
+                            row_number=row[0].row,
+                            error_message='Error with genus/species - does not exist. Please check and correct.')
+                row_with_error_count += row_with_error_count
+                continue
 
-            # If it can't find a taxa then we have a problem
+
+            # Create the metadata object and store it to get its primary key
+            # This must get deleted after this function if no actual data is stored
+            self.instance.project = Project.objects.get(pk=project_pk)
+            metadata = self.instance.save()
 
             # Try and create a population data object
-            '''population_data = PopulationData(
-                metadata=metadata,
-                taxa=taxa,
-                count=count,
-                collision_risk=collision_risk,
-                density_km=density_km,
-                passage_rate=passage_rate
-            )'''
+            try:
+                population_data = PopulationData(metadata=metadata,
+                                                 taxa=taxa,
+                                                 count=count,
+                                                 collision_risk=collision_risk,
+                                                 density_km=density_km,
+                                                 passage_rate=passage_rate)
+                population_data.save()
+            except ValidationError:
+                write_error(main_sheet=main_sheet,
+                            row_number=row[0].row,
+                            error_message='Error with genus/species - does not exist. Please check and correct.')
+                row_with_error_count += row_with_error_count
+                continue
+
+        if row_with_error_count:
+            uploaded_data.save('C:/test.xlsx')
+        else:
 
             # If the validation complains then we have a problem
 

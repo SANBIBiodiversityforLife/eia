@@ -8,63 +8,32 @@ from django.http import HttpResponseRedirect, HttpResponse
 
 from openpyxl import Workbook
 from openpyxl.worksheet.datavalidation import DataValidation
-from openpyxl.styles import PatternFill, Protection, Font
+from openpyxl.styles import PatternFill, Protection, Font, Style
 from openpyxl.cell import get_column_letter
 
-def create_population_data_spreadsheet():
-    # Create the workbook
-    wb = Workbook()
 
-    # Create the template spreadsheet
-    ws = wb.active
-    ws.sheet_properties.tabColor = "1072BA"
-
-    # Store formats
-    heading = Font(bold=True)
-    protected = Protection(locked=True, hidden=False)
-
-    # Add the column + validation
-    ws['A1'] = 'genus'
-    ws['B1'] = 'species'
-    ws['C1'] = 'count'
-    ws['D1'] = 'collision_risk'
-    ws['E1'] = 'density_km'
-    ws['F1'] = 'passage_rate'
-    ws.row_dimensions[1].font = heading
-    ws.row_dimensions[1].protection = protected
-
-    # Get a list of the valid species & genera for validation
-    genera = sorted(list(models.Taxa.objects.values_list('genus', flat=True).distinct()))
-    species = sorted(list(models.Taxa.objects.values_list('species', flat=True).distinct()))
-
-    # Create additional sheets to hold them
-    genus_validation_sheet = wb.create_sheet()
-    genus_validation_sheet.title = 'Valid Genera'
-    species_validation_sheet = wb.create_sheet()
-    species_validation_sheet.title = 'Valid Species'
-
-    # Population the cells
-    for i, g in enumerate(genera, 1):
-        genus_validation_sheet.cell(row=i, column=1, value=g)
-    for i, s in enumerate(species, 1):
-        species_validation_sheet.cell(row=i, column=1, value=s)
-
-
+def population_data_spreadsheet_validation(wb, ws, species_validation_sheet, genus_validation_sheet):
     # Lock the validation sheets so they cannot be tampered with
     species_validation_sheet.protection.enable()
     genus_validation_sheet.protection.enable()
 
+    # Add the protect to the sheet, and remove it for the individual cells
+    ws.protection.sheet = True
+    for row in ws.iter_rows('A2:F2000'):
+        for cell in row:
+            cell.style = Style(protection=Protection(locked=False, hidden=False))
+
     # Create & add the validation
     genera_dv = DataValidation(
         type='list',
-        formula1="='Valid Genera'!A1:A" + str(len(genera)),
+        formula1="='Valid Genera'!A1:A" + str(genus_validation_sheet.max_row),
         error='Invalid genus. Please see the "Valid Genera" sheet to view allowed genera.',
         promptTitle='Restricted list',
         prompt='Please see the "Valid Genera" sheet to view allowed genera.'
     )
     species_dv = DataValidation(
         type='list',
-        formula1="='Valid Species'!A1:A" + str(len(species)),
+        formula1="='Valid Species'!A1:A" + str(species_validation_sheet.max_row),
         error='Invalid genus. Please see the "Valid Species" sheet to view allowed species.',
         promptTitle='Restricted list',
         prompt='Please see the "Valid Species" sheet to view allowed species.'
@@ -114,112 +83,63 @@ def create_population_data_spreadsheet():
     ws.add_data_validation(passage_rate_dv)
     passage_rate_dv.ranges.append('F2:F1048576')
 
-    # Set column widths
-    column_widths = []
-    for row in ws:
-        for i, cell in enumerate(row):
-            if len(column_widths) > i:
-                if len(cell.value) > column_widths[i]:
-                    column_widths[i] = len(cell.value) + 10
-            else:
-                column_widths += [len(cell.value) + 10]
 
-    for i, column_width in enumerate(column_widths):
-        ws.column_dimensions[get_column_letter(i+1)].width = column_width
+def create_population_data_spreadsheet():
+    # Create the workbook
+    wb = Workbook()
+
+    # Create the template spreadsheet
+    ws = wb.active
+    ws.title = 'Main'
+    ws.sheet_properties.tabColor = "1072BA"
+
+    # Freeze panes
+    ws.freeze_panes = ws['A2']
+
+    # Add the columns
+    ws['A1'] = 'genus'
+    ws['B1'] = 'species'
+    ws['C1'] = 'count'
+    ws['D1'] = 'collision_risk'
+    ws['E1'] = 'density_km'
+    ws['F1'] = 'passage_rate'
+
+    # Format them in bold
+    heading = Style(font=Font(bold=True), protection=Protection(locked=True, hidden=False))
+    for row in ws.iter_rows('A1:F1'):
+        for cell in row:
+            cell.style = heading
+
+    # Get a list of the valid species & genera for validation
+    genera = sorted(list(models.Taxa.objects.values_list('genus', flat=True).distinct()))
+    species = sorted(list(models.Taxa.objects.values_list('species', flat=True).distinct()))
+
+    # Create additional sheets to hold them
+    genus_validation_sheet = wb.create_sheet()
+    genus_validation_sheet.title = 'Valid Genera'
+    species_validation_sheet = wb.create_sheet()
+    species_validation_sheet.title = 'Valid Species'
+
+    # Population the cells
+    for i, g in enumerate(genera, 1):
+        genus_validation_sheet.cell(row=i, column=1, value=g)
+    for i, s in enumerate(species, 1):
+        species_validation_sheet.cell(row=i, column=1, value=s)
+
+    # Set column widths
+    ws.column_dimensions['A'].width = 20
+    ws.column_dimensions['B'].width = 20
+    ws.column_dimensions['C'].width = 20
+    ws.column_dimensions['D'].width = 20
+    ws.column_dimensions['E'].width = 20
+    ws.column_dimensions['F'].width = 20
+    ws.column_dimensions['G'].width = 100
+
+    # Add the validation
+    population_data_spreadsheet_validation(wb, ws, species_validation_sheet, genus_validation_sheet)
 
     # Close & save
     wb.save('core' + static('population_data_for_upload.xlsx'))
-
-
-def create_population_data_spreadsheet_old():
-    # TODO when you have time see if you can make this work with openpyxl? http://openpyxl.readthedocs.org/en/latest/validation.html
-    # Create the workbook
-    workbook = xlsxwriter.Workbook('core' + static('population_data_for_upload.xlsx'))
-
-    # Create the template spreadsheet
-    worksheet = workbook.add_worksheet('Main')
-
-    # Store formats
-    heading = workbook.add_format({'bold': True, 'locked': True})
-
-    # Add the column + validation
-    worksheet.write('A1', 'genus', heading)
-    worksheet.write('B1', 'species', heading)
-    worksheet.write('C1', 'count', heading)
-    worksheet.write('D1', 'collision_risk', heading)
-    worksheet.write('E1', 'density_km', heading)
-    worksheet.write('F1', 'passage_rate', heading)
-
-    # Add the list of genus + species options to an additional worksheet so that the validation works
-    genus_validation_sheet = workbook.add_worksheet('Valid Genera')
-    genera = sorted(list(models.Taxa.objects.values_list('genus', flat=True).distinct()))
-    i = 0
-    for g in genera:
-        genus_validation_sheet.write(i, 0, g)
-        i += 1
-
-    species_validation_sheet = workbook.add_worksheet('Valid Species')
-    species = sorted(list(models.Taxa.objects.values_list('species', flat=True).distinct()))
-    j = 0
-    for s in species:
-        species_validation_sheet.write(j, 0, s)
-        j += 1
-
-    # Lock the validation sheet so it cannot be tampered with
-    species_validation_sheet.protect()
-    genus_validation_sheet.protect()
-
-    # Add the list validation
-    worksheet.data_validation('A2:A800', {
-        'validate': 'list',
-        'source': "='Valid Genera'!A1:A" + str(i + 1),
-        'input_title': 'Restricted list',
-        'input_message': 'Please see the "Valid Genera" sheet to view allowed genera.',
-        'error_message': 'Invalid genus. Please see the "Valid Genera" sheet to view allowed genera.'
-    })
-    worksheet.data_validation('B2:B800', {
-        'validate': 'list',
-        'source': "='Valid Species'!A1:A" + str(j + 1),
-        'input_title': 'Restricted list',
-        'input_message': 'Please see the "Valid Species" sheet to view allowed species.',
-        'error_message': 'Invalid species. Please see the "Valid Species" sheet to view allowed species.'
-    })
-    worksheet.data_validation('D2:D100', {
-        'validate': 'list',
-        'source': ['High', 'Medium', 'Low'],
-        'input_title': 'Restricted list',
-        'input_message': 'Please enter either: "High", "Medium" or "Low".',
-        'error_message': 'Invalid collision risk. Please enter either: "High", "Medium" or "Low".'
-    })
-
-    # Add the number validation
-    worksheet.data_validation('C2:C100', {
-        'validate': 'integer',
-        'criteria': '>=',
-        'value': 1,
-        'input_message': 'Please enter a whole number greater than 0.',
-        'error_message': 'Invalid. Please enter a whole number greater than 0.'
-    })
-    worksheet.data_validation('E2:E100', {
-        'validate': 'decimal',
-        'criteria': '>=',
-        'value': 0.01,
-        'input_message': 'Please enter a number greater than 0.',
-        'error_message': 'Invalid. Please enter a number greater than 0.'
-    })
-    worksheet.data_validation('F2:F100', {
-        'validate': 'decimal',
-        'criteria': '>',
-        'value': 0.01,
-        'input_message': 'Please enter a number greater than 0.',
-        'error_message': 'Invalid. Please enter a number greater than 0.'
-    })
-
-    # Set column widths
-    worksheet.set_column('A:F', 20)
-
-    # Close & save
-    workbook.close()
 
 
 class FocalSiteDataCreate(CreateView):
