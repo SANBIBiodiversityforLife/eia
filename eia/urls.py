@@ -32,7 +32,9 @@ urlpatterns = [
 
     # Data related URLs
     url(r'^project/(?P<project_pk>[0-9]+)/data/', views.DataList.as_view(), name='data_list'),
-    url(r'^project/(?P<project_pk>[0-9]+)/population_data/create/', views.PopulationDataCreateView.as_view(), name='population_data_create'),
+    url(r'^project/(?P<project_pk>[0-9]+)/population_data/create/',
+        views.PopulationDataCreateView.as_view(),
+        name='population_data_create'),
     #url(r'^project/(?P<project_pk>[0-9]+)/population_data/create/', views.create_population_data, name='population_data_create'),
 
     url(r'^focal_site/create/$', views.FocalSiteCreate.as_view(), name='focal_site_create'),

@@ -7,8 +7,11 @@ from core.models import Project, PopulationData, Taxa, TaxaOrder, FocalSite, Foc
 from core import validators
 from openpyxl import load_workbook
 #from django.contrib.staticfiles.templatetags.staticfiles import static
-from openpyxl.styles import Color, Fill, Style, fills, PatternFill
+from openpyxl.styles import Color, Fill, Style, fills, PatternFill, Font
 from django.core.exceptions import ValidationError
+from django.contrib.staticfiles.templatetags.staticfiles import static
+import tempfile
+import os
 
 class ProjectCreateForm(forms.ModelForm):
     class Meta:
@@ -59,7 +62,8 @@ class PopulationDataCreateForm(forms.ModelForm):
 
 def write_error(main_sheet, row_number, error_message):
     main_sheet.cell(column=7, row=row_number, value=error_message)
-    main_sheet.cell(column=7, row=row_number).style = Style(fill=PatternFill(patternType='solid', fgColor=Color('FFFF0000')))
+    main_sheet.cell(column=7, row=row_number).style = Style(font=Font(color='FFFFFFFF'),
+                                                            fill=PatternFill(patternType='solid', fgColor=Color('FFFF0000')))
 
 class MetaDataCreateForm(forms.ModelForm):
     upload_data = forms.FileField(
@@ -81,9 +85,10 @@ class MetaDataCreateForm(forms.ModelForm):
         }
 
     def process_data(self, project_pk):
+        print('processing data...')
         # Load the workbook from the file held in memory
         uploaded_data = load_workbook(self.files['upload_data'])
-
+        print('loaded workbook...')
         # Delete the upload_data fields & file now they are in the openpyxl object
         del self.fields['upload_data']
         del self.files['upload_data']
@@ -91,8 +96,17 @@ class MetaDataCreateForm(forms.ModelForm):
         # Get the correct sheet - TODO how are we going to stop them from renaming the sheet?
         main_sheet = uploaded_data.get_sheet_by_name("Main")
 
+        # Create the metadata object and store it to get its primary key
+        # This must get deleted after this function if no actual data is stored
+        self.instance.project = Project.objects.get(pk=project_pk)
+        self.instance.save()
+        metadata = self.instance
+
         # Keep track of the errors somehow
         row_with_error_count = 0
+
+        # Keep track of all the population data objects - if we have no errors at the end we shall save them
+        population_data_list = []
 
         # Loop through the rows in the sheet
         for row in main_sheet.iter_rows(row_offset=1):
@@ -113,7 +127,7 @@ class MetaDataCreateForm(forms.ModelForm):
                 write_error(main_sheet=main_sheet,
                             row_number=row[0].row,
                             error_message='Incomplete row. All the fields must be filled out.')
-                row_with_error_count += row_with_error_count
+                row_with_error_count += 1
                 continue
 
             # Try and retrieve the taxa based on genus + species
@@ -123,36 +137,49 @@ class MetaDataCreateForm(forms.ModelForm):
                 write_error(main_sheet=main_sheet,
                             row_number=row[0].row,
                             error_message='Error with genus/species - does not exist. Please check and correct.')
-                row_with_error_count += row_with_error_count
+                row_with_error_count += 1
                 continue
-
-
-            # Create the metadata object and store it to get its primary key
-            # This must get deleted after this function if no actual data is stored
-            self.instance.project = Project.objects.get(pk=project_pk)
-            metadata = self.instance.save()
 
             # Try and create a population data object
             try:
+                # Create a new object so we can run the validation on it
                 population_data = PopulationData(metadata=metadata,
                                                  taxa=taxa,
                                                  count=count,
                                                  collision_risk=collision_risk,
                                                  density_km=density_km,
                                                  passage_rate=passage_rate)
-                population_data.save()
-            except ValidationError:
+
+                # Call the validation on the object
+                population_data.full_clean()
+
+                # If it hasn't slipped into the except, add it to the main list
+                population_data_list.append(population_data)
+            except ValidationError as err:
                 write_error(main_sheet=main_sheet,
                             row_number=row[0].row,
-                            error_message='Error with genus/species - does not exist. Please check and correct.')
-                row_with_error_count += row_with_error_count
+                            error_message='Error when saving {}'.format(err))
+                row_with_error_count += 1
                 continue
 
-        if row_with_error_count:
-            uploaded_data.save('C:/test.xlsx')
-        else:
+        if row_with_error_count > 0:
+            # Delete the metadata
+            metadata.delete()
 
-            # If the validation complains then we have a problem
+            # Unique filename and timestamp
+            fd, unique_file = tempfile.mkstemp('.xlsx', 'pop_')
+            uploaded_data.save(unique_file)
+            os.close(fd)
+
+            # Send back the file
+            return unique_file
+        else:
+            # Save all the population data
+            for population_data in population_data_list:
+                population_data.save()
+
+            # No errors, return
+            return False
 
         #import pdb; pdb.set_trace()
 

@@ -9,7 +9,46 @@ from django.http import HttpResponseRedirect, HttpResponse
 from openpyxl import Workbook
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.styles import PatternFill, Protection, Font, Style
+
 from openpyxl.cell import get_column_letter
+
+from django.http import JsonResponse
+from django.views.generic.edit import CreateView
+from io import BytesIO
+
+from django.core.urlresolvers import reverse
+
+class AjaxableResponseMixin(object):
+    """
+    Mixin to add AJAX support to a form.
+    Must be used with an object-based FormView (e.g. CreateView)
+    """
+    def form_invalid(self, form):
+        response = super(AjaxableResponseMixin, self).form_invalid(form)
+        if self.request.is_ajax():
+            return JsonResponse(form.errors, status=400)
+        else:
+            return response
+
+    def form_valid(self, form):
+        # A custom function which should be present in all data adding forms
+        xlsx_with_errors = form.process_data(project_pk=self.kwargs['project_pk'])
+
+        # We make sure to call the parent's form_valid() method because
+        # it might do some processing (in the case of CreateView, it will
+        # call form.save() for example).
+        # response = super(AjaxableResponseMixin, self).form_valid(form)
+        # removed the above as I don't think i need it for my custom function
+        import pdb; pdb.set_trace()
+        if self.request.is_ajax():
+            print('returning data')
+            data = {
+                #'pk': self.object.pk,
+                'error_sheet': xlsx_with_errors
+            }
+            return JsonResponse(data)
+        else:
+            return HttpResponseRedirect(self.get_success_url())
 
 
 def population_data_spreadsheet_validation(wb, ws, species_validation_sheet, genus_validation_sheet):
@@ -142,6 +181,55 @@ def create_population_data_spreadsheet():
     wb.save('core' + static('population_data_for_upload.xlsx'))
 
 
+class PopulationDataCreateView(FormView):#class PopulationDataCreateView(AjaxableResponseMixin, FormView):
+    template_name = 'core/populationdata_create_form.html'
+    form_class = forms.MetaDataCreateForm
+
+    def get_success_url(self):
+        return reverse('project_detail', args={'pk': self.kwargs['project_pk']})
+
+    def form_invalid(self, form):
+        response = super(PopulationDataCreateView, self).form_invalid(form)
+        if self.request.is_ajax():
+            return JsonResponse(form.errors, status=400)
+        else:
+            return response
+
+    def form_valid(self, form):
+        print('calling form_valid')
+        # A custom function which should be present in all data adding forms
+        xlsx_with_errors = form.process_data(project_pk=self.kwargs['project_pk'])
+
+        # We make sure to call the parent's form_valid() method because
+        # it might do some processing (in the case of CreateView, it will
+        # call form.save() for example).
+        # response = super(AjaxableResponseMixin, self).form_valid(form)
+        # removed the above as I don't think i need it for my custom function
+
+        if self.request.is_ajax():
+            print('returning data')
+            data = {
+                #'pk': self.object.pk,
+                'error_sheet': xlsx_with_errors
+            }
+            return JsonResponse(data)
+        else:
+            return HttpResponseRedirect(self.get_success_url())
+    # create_population_data_spreadsheet() TODO this needs to be called through some chron thing
+'''
+    # This method is called when valid form data has been POSTed. It should return an HttpResponse.
+    def form_valid(self, form):
+        # This is taking a long time...
+        print('form_valid is running')
+
+        # Run the data processing function
+        form.process_data(project_pk=self.kwargs['project_pk'])
+
+        # I don't think we need to run the super function, as the process_data should have taken care of all that
+        # return super(PopulationDataCreateView, self).form_valid(form)
+
+        return HttpResponseRedirect(self.get_success_url())'''
+
 class FocalSiteDataCreate(CreateView):
     model = models.FocalSiteData
     template_name_suffix = '_create_form'
@@ -197,22 +285,6 @@ class PopulationDataCreate(CreateView):
     model = models.PopulationData
     template_name_suffix = '_create_form'
     form_class = forms.PopulationDataCreateForm
-
-
-class PopulationDataCreateView(FormView):
-    template_name = 'core/populationdata_create_form.html'
-    form_class = forms.MetaDataCreateForm
-
-    create_population_data_spreadsheet()
-
-    def form_valid(self, form):
-        # This method is called when valid form data has been POSTed.
-        # It should return an HttpResponse.
-        print('calling form_valid')
-        form.process_data(project_pk=self.kwargs['project_pk'])
-        #return super(PopulationDataCreateView, self).form_valid(form)
-        return HttpResponseRedirect(self.get_success_url())
-
 
 
 '''def create_population_data(request, project_pk):

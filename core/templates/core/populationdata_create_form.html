@@ -9,16 +9,38 @@
 {% block heading %}Upload population data{% endblock heading %}
 
 {% block content %}
-<form enctype="multipart/form-data" action="" method="post">{% csrf_token %}
+<!-- Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Thank you. Your data is being uploaded.</h4>
+      </div>
+      <div class="modal-body" id="modalMessage">
+      </div>
+      <div class="modal-footer">
+        <p>We are checking your spreadsheet for any errors and adding it to the database. If there are any errors no data will be uploaded, and you will be presented with a new spreadsheet with the errors highlighted for you to correct.</p>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Form -->
+<form enctype="multipart/form-data" action="" method="post" id="upload-form">{% csrf_token %}
     {% for field in form %}
-        {% if field.name == "data" %}
-            <p class="alert alert-success" role="alert">You need to upload count/population density data for each species you observed. This information must be entered into the system in a very specific format.</p>
-            <ol>
-                <li><a href='{% static "population_data_for_upload.xlsx" %}' role="button" class="btn btn-primary">Download the template spreadsheet</a></li>
-                <li>If a yellow, "protected" message comes up, click 'enable editing' on the spreadsheet</li>
-                <li>Fill in your data in all of the relevant columns</li>
-                <li>Upload the spreadsheet back onto the server: {{ field }}. {{ field.errors }}</li>
-            </ol>
+        {% if field.name == "upload_data" %}
+            <div class="alert alert-success" role="alert">
+                <p><strong>You need to upload count/population density data for each species observed. This must be entered into the system in a very specific format.</strong></p>
+                <hr>
+                <ol>
+                    <li><a href='{% static "population_data_for_upload.xlsx" %}' role="button" class="btn btn-primary">Download the template spreadsheet</a></li>
+                    <li>If a yellow, "protected" message comes up, click 'enable editing' on the spreadsheet <img src='{% static "core/img/forms/enable-editing.png" %}'</li>
+                    <li>Fill in your data in all of the relevant columns</li>
+                </ol>
+            </div>
+            Upload the spreadsheet back onto the server: {{ field }}. {{ field.errors }}
         {% else %}
             <div class="form-group">
                 {{ field.label }} {{ field }}
@@ -26,16 +48,49 @@
             {{ field.errors }}
         {% endif %}
     {% endfor %}
-    <input type="submit" value="Add data to project" />
+    <input type="submit" value="Add data to project" data-toggle="modal" data-target="#uploadModal"/>
 </form>
 {% endblock content %}
 
 {% block js %}
 <script src='{% static "datetimepicker/jquery.datetimepicker.js" %}'></script>
+<script src='{% static "core/js/jquery.form.min.js" %}'></script>
 <script language="javascript">
   $(document).ready(function() {
     $('.datepicker').datetimepicker({step:30});
-    console.log('hi');
+
+    // Ajax the form
+    var options = {
+        dataType: 'json',
+        success: function(data) {
+            $('h4#myModalLabel').html('Data successfully uploaded');
+
+            var message = '<div class="alert alert-danger" role="alert"><span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>';
+            message = message + '<span class="sr-only">Error:</span> + Oops! There were errors in your spreadsheet. Download ' + data['error_sheet'];
+            $('#modalMessage').html(message);
+        }
+    }
+    $('#upload-form').ajaxForm(options);
+
+    /* note http://stackoverflow.com/questions/166221/how-can-i-upload-files-asynchronously/8758614#8758614
+    upload_form = $('#upload-form');
+    upload_form.submit(function() {
+        $.ajax({
+            data: upload_form.serialize(),
+            type: upload_form.attr('method'),
+            url: upload_form.attr('action'),
+
+            success: function(data) {
+                console.log('returning data');
+                console.log(data);
+            },
+            error: function(data) {
+                console.log('there were errors');
+            }
+        });
+        return false;
+    });*/
   })
+
 </script>
 {% endblock %}
