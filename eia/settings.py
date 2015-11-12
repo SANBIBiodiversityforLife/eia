@@ -40,7 +40,8 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.gis',
     'core',
-    'leaflet'
+    'leaflet',
+    'bootstrap3'
 )
 
 MIDDLEWARE_CLASSES = (

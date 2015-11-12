@@ -17,10 +17,16 @@
     <div class="container">
         <header class="row">
             <h1 class="col-md-8"><a href="/"><img src="{% static 'core/img/logo.png' %}" alt="SANBI's Environmental Impact Assessment Database"></a></h1>
-            <div class="col-md-4"><a href="/"><img src="{% static 'core/img/logo-dea.png' %}" alt="In partnership with the South African Department of Environmental affairs"></a></div>
+            <div class="col-md-4">&nbsp;</div>
         </header>
+
+        {% block breadcrumb %}{% endblock %}
         <h1 class="page-header">{% block heading %}{% endblock %}</h1>
         {% block content %}{% endblock %}
+        <footer>
+            <p>In partnership with the South African Department of Environmental affairs</p>
+            <a href="/"><img src="{% static 'core/img/logo-dea.png' %}" alt="In partnership with the South African Department of Environmental affairs"></a>
+        </footer>
     </div>
     <!-- jQuery first, then Bootstrap JS. -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>

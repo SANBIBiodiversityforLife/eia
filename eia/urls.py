@@ -22,7 +22,7 @@ urlpatterns = [
     url(r'^projects/$', views.ProjectList.as_view(), name='project_list'),
 
     # Project related URLs
-    url(r'^project/(?P<pk>[0-9]+)$/', views.ProjectDetail.as_view(), name='project_detail'),
+    url(r'^project/(?P<pk>[0-9]+)/$', views.ProjectDetail.as_view(), name='project_detail'),
     url(r'^project/create/$', views.ProjectCreate.as_view(), name='project_create'),
     url(r'^project/update/(?P<pk>[0-9]+)/$', views.ProjectUpdate.as_view(), name='project_update'),
     url(r'^project_delete/(?P<pk>[0-9]+)/$', views.ProjectDelete.as_view(), name='project_delete'),

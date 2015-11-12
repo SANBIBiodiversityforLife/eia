@@ -168,10 +168,10 @@ def create_population_data_spreadsheet():
     # Set column widths
     ws.column_dimensions['A'].width = 20
     ws.column_dimensions['B'].width = 20
-    ws.column_dimensions['C'].width = 20
-    ws.column_dimensions['D'].width = 20
-    ws.column_dimensions['E'].width = 20
-    ws.column_dimensions['F'].width = 20
+    ws.column_dimensions['C'].width = 8
+    ws.column_dimensions['D'].width = 13
+    ws.column_dimensions['E'].width = 12
+    ws.column_dimensions['F'].width = 12
     ws.column_dimensions['G'].width = 100
 
     # Add the validation
@@ -184,9 +184,21 @@ def create_population_data_spreadsheet():
 class PopulationDataCreateView(FormView):#class PopulationDataCreateView(AjaxableResponseMixin, FormView):
     template_name = 'core/populationdata_create_form.html'
     form_class = forms.MetaDataCreateForm
+    #create_population_data_spreadsheet()
 
     def get_success_url(self):
         return reverse('project_detail', args={'pk': self.kwargs['project_pk']})
+
+    # No idea why this needs to go in, but it seems to http://stackoverflow.com/questions/18605008/curious-about-get-form-kwargs-in-formview
+    def get_form_kwargs(self):
+        kwargs = super(PopulationDataCreateView, self).get_form_kwargs()
+        kwargs['project_pk'] = self.kwargs['project_pk']
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super(PopulationDataCreateView, self).get_context_data(**kwargs)
+        context['project_pk'] = self.kwargs['project_pk']
+        return context
 
     def form_invalid(self, form):
         response = super(PopulationDataCreateView, self).form_invalid(form)

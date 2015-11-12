@@ -67,18 +67,19 @@ def write_error(main_sheet, row_number, error_message):
 
 class MetaDataCreateForm(forms.ModelForm):
     upload_data = forms.FileField(
-        label=mark_safe('Ready? Upload the filled-in spreadsheet'),
+        label=mark_safe('Upload spreadsheet'),
         validators=[validators.validate_spreadsheet]
     )
 
     def __init__(self, *args, **kwargs):
-        self.project_pk = kwargs.pop('pk', None)
+        self.project_pk = kwargs.pop('project_pk')
         super(MetaDataCreateForm, self).__init__(*args, **kwargs)
-        self.fields['collected_to'].label = "to "
+        self.fields['collected_from'].label = "Data was collected between"
+        self.fields['collected_to'].label = "and"
 
     class Meta:
         model = MetaData
-        fields = ('collected_from', 'collected_to', 'control_data')
+        fields = ('upload_data', 'collected_from', 'collected_to', 'control_data')
         widgets = {
             'collected_from': forms.TextInput(attrs={'class': 'datepicker'}),
             'collected_to': forms.TextInput(attrs={'class': 'datepicker'})

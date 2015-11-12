@@ -206,7 +206,7 @@ class MetaData(models.Model):
     collected_to = models.DateTimeField()
     collected_from = models.DateTimeField()
     flagged_for_query = models.BooleanField(default=False)
-    control_data = models.BooleanField(default=False)
+    control_data = models.BooleanField("This is control data", default=False)
     # TODO uploader =
 
     # Following two functions are taken from
