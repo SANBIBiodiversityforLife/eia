@@ -3,20 +3,18 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, FormView
 from core import models, forms
-from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.http import HttpResponseRedirect, HttpResponse
-
-from openpyxl import Workbook
-from openpyxl.worksheet.datavalidation import DataValidation
-from openpyxl.styles import PatternFill, Protection, Font, Style
-
-from openpyxl.cell import get_column_letter
 
 from django.http import JsonResponse
 from django.views.generic.edit import CreateView
 from io import BytesIO
 
 from django.core.urlresolvers import reverse
+import tempfile
+import os
+from django.conf import settings
+from core.spreadsheet_creation import create_population_data_spreadsheet
+
 
 class AjaxableResponseMixin(object):
     """
@@ -51,140 +49,16 @@ class AjaxableResponseMixin(object):
             return HttpResponseRedirect(self.get_success_url())
 
 
-def population_data_spreadsheet_validation(wb, ws, species_validation_sheet, genus_validation_sheet):
-    # Lock the validation sheets so they cannot be tampered with
-    species_validation_sheet.protection.enable()
-    genus_validation_sheet.protection.enable()
-
-    # Add the protect to the sheet, and remove it for the individual cells
-    ws.protection.sheet = True
-    for row in ws.iter_rows('A2:F2000'):
-        for cell in row:
-            cell.style = Style(protection=Protection(locked=False, hidden=False))
-
-    # Create & add the validation
-    genera_dv = DataValidation(
-        type='list',
-        formula1="='Valid Genera'!A1:A" + str(genus_validation_sheet.max_row),
-        error='Invalid genus. Please see the "Valid Genera" sheet to view allowed genera.',
-        promptTitle='Restricted list',
-        prompt='Please see the "Valid Genera" sheet to view allowed genera.'
-    )
-    species_dv = DataValidation(
-        type='list',
-        formula1="='Valid Species'!A1:A" + str(species_validation_sheet.max_row),
-        error='Invalid genus. Please see the "Valid Species" sheet to view allowed species.',
-        promptTitle='Restricted list',
-        prompt='Please see the "Valid Species" sheet to view allowed species.'
-    )
-    ws.add_data_validation(genera_dv)
-    ws.add_data_validation(species_dv)
-    genera_dv.ranges.append('A2:A1048576')
-    species_dv.ranges.append('B2:B1048576')
-
-    # Add the list validation
-    collision_risk_dv = DataValidation(
-        type="list",
-        formula1='"High,Medium,Low"',
-        promptTitle='Restricted list',
-        prompt='Please enter either: "High", "Medium" or "Low".',
-        error='Invalid collision risk. Please enter either: "High", "Medium" or "Low".'
-    )
-    ws.add_data_validation(collision_risk_dv)
-    collision_risk_dv.ranges.append('D2:D1048576')
-
-    # Add the number validation
-    count_dv = DataValidation(
-        type='whole',
-        operator='greaterThan',
-        formula1=0,
-        prompt='Please enter a whole number greater than 0.',
-        error='Invalid. Please enter a whole number greater than 0.'
-    )
-    ws.add_data_validation(count_dv)
-    count_dv.ranges.append('C2:C1048576')
-    density_km_dv = DataValidation(  # operator="between", formula1=0, formula2=1
-        type='decimal',
-        operator='greaterThan',
-        formula1=0.01,
-        prompt='Please enter a number greater than 0.',
-        error='Invalid. Please enter a number greater than 0.'
-    )
-    ws.add_data_validation(density_km_dv)
-    density_km_dv.ranges.append('E1:E1048576')
-    passage_rate_dv = DataValidation(
-        type='whole',
-        operator='greaterThan',
-        formula1=0,
-        prompt='Please enter a whole number greater than 0.',
-        error='Invalid. Please enter a whole number greater than 0.'
-    )
-    ws.add_data_validation(passage_rate_dv)
-    passage_rate_dv.ranges.append('F2:F1048576')
-
-
-def create_population_data_spreadsheet():
-    # Create the workbook
-    wb = Workbook()
-
-    # Create the template spreadsheet
-    ws = wb.active
-    ws.title = 'Main'
-    ws.sheet_properties.tabColor = "1072BA"
-
-    # Freeze panes
-    ws.freeze_panes = ws['A2']
-
-    # Add the columns
-    ws['A1'] = 'genus'
-    ws['B1'] = 'species'
-    ws['C1'] = 'count'
-    ws['D1'] = 'collision_risk'
-    ws['E1'] = 'density_km'
-    ws['F1'] = 'passage_rate'
-
-    # Format them in bold
-    heading = Style(font=Font(bold=True), protection=Protection(locked=True, hidden=False))
-    for row in ws.iter_rows('A1:F1'):
-        for cell in row:
-            cell.style = heading
-
-    # Get a list of the valid species & genera for validation
-    genera = sorted(list(models.Taxa.objects.values_list('genus', flat=True).distinct()))
-    species = sorted(list(models.Taxa.objects.values_list('species', flat=True).distinct()))
-
-    # Create additional sheets to hold them
-    genus_validation_sheet = wb.create_sheet()
-    genus_validation_sheet.title = 'Valid Genera'
-    species_validation_sheet = wb.create_sheet()
-    species_validation_sheet.title = 'Valid Species'
-
-    # Population the cells
-    for i, g in enumerate(genera, 1):
-        genus_validation_sheet.cell(row=i, column=1, value=g)
-    for i, s in enumerate(species, 1):
-        species_validation_sheet.cell(row=i, column=1, value=s)
-
-    # Set column widths
-    ws.column_dimensions['A'].width = 20
-    ws.column_dimensions['B'].width = 20
-    ws.column_dimensions['C'].width = 8
-    ws.column_dimensions['D'].width = 13
-    ws.column_dimensions['E'].width = 12
-    ws.column_dimensions['F'].width = 12
-    ws.column_dimensions['G'].width = 100
-
-    # Add the validation
-    population_data_spreadsheet_validation(wb, ws, species_validation_sheet, genus_validation_sheet)
-
-    # Close & save
-    wb.save('core' + static('population_data_for_upload.xlsx'))
-
-
 class PopulationDataCreateView(FormView):#class PopulationDataCreateView(AjaxableResponseMixin, FormView):
     template_name = 'core/populationdata_create_form.html'
     form_class = forms.MetaDataCreateForm
-    #create_population_data_spreadsheet()
+    # create_population_data_spreadsheet()
+
+    # tmp_dir = os.path.join(settings.BASE_DIR, 'core', 'static', 'core', 'tmp')
+    # fd, unique_file = tempfile.mkstemp(suffix='.xlsx', prefix='pop_', dir=tmp_dir)
+    # os.close(fd)
+    # print(os.path.join('static', 'core', 'tmp', os.path.basename(os.path.relpath(unique_file))))
+    # TODO the above is terrible and must be fixed, serve the files through a proper webserver
 
     def get_success_url(self):
         return reverse('project_detail', args={'pk': self.kwargs['project_pk']})
@@ -200,6 +74,7 @@ class PopulationDataCreateView(FormView):#class PopulationDataCreateView(Ajaxabl
         context['project_pk'] = self.kwargs['project_pk']
         return context
 
+
     def form_invalid(self, form):
         response = super(PopulationDataCreateView, self).form_invalid(form)
         if self.request.is_ajax():
@@ -211,6 +86,7 @@ class PopulationDataCreateView(FormView):#class PopulationDataCreateView(Ajaxabl
         print('calling form_valid')
         # A custom function which should be present in all data adding forms
         xlsx_with_errors = form.process_data(project_pk=self.kwargs['project_pk'])
+        print('back in form_valid')
 
         # We make sure to call the parent's form_valid() method because
         # it might do some processing (in the case of CreateView, it will
@@ -227,7 +103,6 @@ class PopulationDataCreateView(FormView):#class PopulationDataCreateView(Ajaxabl
             return JsonResponse(data)
         else:
             return HttpResponseRedirect(self.get_success_url())
-    # create_population_data_spreadsheet() TODO this needs to be called through some chron thing
 '''
     # This method is called when valid form data has been POSTed. It should return an HttpResponse.
     def form_valid(self, form):

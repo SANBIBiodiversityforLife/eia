@@ -12,6 +12,8 @@ from django.core.exceptions import ValidationError
 from django.contrib.staticfiles.templatetags.staticfiles import static
 import tempfile
 import os
+from django.conf import settings
+from core.spreadsheet_creation import population_data_spreadsheet_validation
 
 class ProjectCreateForm(forms.ModelForm):
     class Meta:
@@ -96,7 +98,7 @@ class MetaDataCreateForm(forms.ModelForm):
 
         # Get the correct sheet - TODO how are we going to stop them from renaming the sheet?
         main_sheet = uploaded_data.get_sheet_by_name("Main")
-
+        print('Retrieved worksheet...')
         # Create the metadata object and store it to get its primary key
         # This must get deleted after this function if no actual data is stored
         self.instance.project = Project.objects.get(pk=project_pk)
@@ -122,6 +124,8 @@ class MetaDataCreateForm(forms.ModelForm):
             # If all of these are blank, (i.e., none have a value), then ignore this row
             if not(genus or species or count or collision_risk or density_km or passage_rate):
                 continue
+
+            print('Looping through main sheet')
 
             # If any of these are blank (i.e. any don't have a value), throw up an error and get them to fill it in
             if not(genus and species and count and collision_risk and density_km and passage_rate):
@@ -164,17 +168,29 @@ class MetaDataCreateForm(forms.ModelForm):
                 continue
 
         if row_with_error_count > 0:
+            print('Errors with data - extra processing')
             # Delete the metadata
             metadata.delete()
 
+            # Add the validation
+            population_data_spreadsheet_validation(uploaded_data, main_sheet,
+                                                   uploaded_data.get_sheet_by_name("Valid Species"),
+                                                   uploaded_data.get_sheet_by_name("Valid Genera"))
+
             # Unique filename and timestamp
-            fd, unique_file = tempfile.mkstemp('.xlsx', 'pop_')
+            # fd, unique_file = tempfile.mkstemp(suffix='.xlsx', prefix='pop_', dir=os.path.join(settings.BASE_DIR, 'tmp'))
+            tmp_dir = os.path.join(settings.BASE_DIR, 'core', 'static', 'core', 'tmp')
+            print(tmp_dir)
+            fd, unique_file = tempfile.mkstemp(suffix='.xlsx', prefix='pop_', dir=tmp_dir)
+            # TODO the above is terrible and must be fixed, serve the files through a proper webserver
             uploaded_data.save(unique_file)
             os.close(fd)
+            print('Created error file, returning URL')
 
-            # Send back the file
-            return unique_file
+            # Send back the file url
+            return os.path.join('static', 'core', 'tmp', os.path.basename(os.path.relpath(unique_file)))
         else:
+            print('No errors - saving data')
             # Save all the population data
             for population_data in population_data_list:
                 population_data.save()

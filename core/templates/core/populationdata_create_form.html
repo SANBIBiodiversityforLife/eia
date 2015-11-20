@@ -18,7 +18,7 @@
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <!--<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>-->
         <h4 class="modal-title" id="myModalLabel">Thank you. Your data is being uploaded.</h4>
       </div>
       <div class="modal-body" id="modalMessage">
@@ -29,8 +29,24 @@
               </div>
           </div>
       </div>
+      <div class="modal-body" id="modalMessageFailure">
+          <div class="alert alert-danger" role="alert">
+              <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+              <strong><span class="sr-only">Error:</span> Oops! There were errors in your spreadsheet.</strong><hr>
+              <a id="spreadsheet-errors" href="" role="button" class="btn btn-danger"><span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+                  Download the spreadsheet with highlighted errors</a> and <a href="{% url 'population_data_create' project_pk=project_pk %}">try again</a>.
+              <p><strong>REMEMBER</strong> to click on the yellow button to enable editing!</p>
+          </div>
+      </div>
+      <div class="modal-body" id="modalMessageSuccess">
+          <div class="alert alert-success" role="alert">
+              <span class="glyphicon glyphicon-thumbs-up" aria-hidden="true"></span> <strong>Thank you.</strong><hr>
+              <p>Your data has been successfully uploaded.</p>
+              <p><a href="{% url 'project_detail' pk=project_pk %}" role="button" class="btn btn-success"><span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span> Return to the project page</a></p>
+          </div>
+      </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel upload &amp; close this window</button>
+        <!--<button type="button" class="btn btn-default" data-dismiss="modal">Cancel upload &amp; close this window</button>-->
       </div>
     </div>
   </div>
@@ -38,35 +54,90 @@
 
 <!-- Form -->
 <div class="steps row">
-    <div class="step-1 col-xs-4 fadein"><div><h4>Step 1 <span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span></h4><hr><p><a href='{% static "population_data_for_upload.xlsx" %}' role="button" class="btn btn-primary">Download the template spreadsheet</a></p></div></div>
-    <div class="step-2 col-xs-4 fadein"><div><h4>Step 2 <span class="glyphicon glyphicon-bell" aria-hidden="true"></span></h4><hr>If a yellow, "protected" message comes up, click 'enable editing' on the spreadsheet</div></div>
+    <div class="step-1 col-xs-4 fadein"><a id="step-wrapper" href='{% static "population_data_for_upload.xlsx" %}'><h4>Step 1 <span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span></h4><hr><p><span role="button" class="btn btn-primary">Download the template spreadsheet</span></p></a></div>
+    <div class="step-2 col-xs-4 fadein"><div><h4>Step 2 <span class="glyphicon glyphicon-bell" aria-hidden="true"></span></h4><hr><strong class="important">IMPORTANT:</strong> If a yellow, "protected" message comes up, click 'enable editing' on the spreadsheet</div></div>
     <div class="step-3 col-xs-4 fadein"><div><h4>Step 3 <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></h4><hr>Fill in your data in all of the relevant columns</div></div>
 </div>
 <hr>
-<form enctype="multipart/form-data" action="" method="post" id="upload-form" class="fadein">{% csrf_token %}
+<form enctype="multipart/form-data" action="" method="post" id="upload-form" class="fadein" role="form">{% csrf_token %}
     <h3>Ready? Upload the filled-in spreadsheet</h3>
     <div class="form-container">
-    {% bootstrap_form form %}
+    {% bootstrap_form_errors form %}
+    {% for field in form %}
+        {% bootstrap_field field %}
+        {% if field.name == 'upload_data' %}
+        <div id="formRemainder"><hr><div class="alert alert-success">Nearly done! Please provide us with the date <strong>(and time!)</strong> SPAN of your data collection, and whether it was for a control site or not.</div>
+        {% endif %}
+    {% endfor %}
     {% buttons %}
-        <button type="submit" class="btn btn-primary" data-toggle="modal" data-target="#uploadModal">
+        <button type="submit" class="btn btn-primary"><!--data-toggle="modal" data-target="#uploadModal"-->
             {% bootstrap_icon "floppy-disk" %} Add data to project
         </button>
     {% endbuttons %}
-    </div>
+    </div></div>
 </form>
 {% endblock content %}
 
 {% block js %}
 <script src='{% static "datetimepicker/jquery.datetimepicker.js" %}'></script>
 <script src='{% static "core/js/jquery.form.min.js" %}'></script>
+<script src='{% static "core/js/validator.min.js" %}'></script>
 <script language="javascript">
   $(document).ready(function() {
     $('.datepicker').datetimepicker({step:30});
 
     $(".fadein").each(function(index) {
         $(this).delay(920*index).fadeIn(600);
-        console.log(this);
     });
+
+    // Make step 2 'breathe', see http://stackoverflow.com/questions/5412277/jquery-continuous-grow-shrink ?
+    /*var intDuration = 2000; //time in ms
+    setInterval(
+       function(){
+           $('.steps .step-2 div').animate({"background-size": "+=105%"},'slow').delay(1000)
+               .animate({"background-size": "-=105%"},'slow');
+       },
+       intDuration
+    );*/
+
+    // Add the help text for the validator (see below)
+    $('.form-group').append('<div class="help-block with-errors"></div>');
+
+    // Form validation http://1000hz.github.io/bootstrap-validator/
+    // https://www.linkedin.com/pulse/bootstrap-validator-how-create-custom-validation-omri-marcovtich
+    $('input#id_collected_to').attr('data-futuredate', 'futuredate');
+    var options = {
+        custom: {
+            'futuredate':
+                function($el) {
+                    return $('input#id_collected_to').val() > $('input#id_collected_from').val();
+                }
+        },
+        errors: {
+            'futuredate': "You must select a date later than the previously-input date."
+        }
+    }
+    $('#upload-form').validator(options);
+    $('#upload-form').on('submit', function (e) {
+      if (e.isDefaultPrevented()) {
+        // handle the invalid form...
+        console.log('form errors');
+      } else {
+        // everything looks good!
+        console.log('triggering modal, no validation errors');
+        $('#uploadModal').modal('show');
+      }
+    })
+
+    // Make the remainder of the form appear once the spreadsheet has been selected
+    $("input#id_upload_data").change(function (){
+        // add some validation var fileName = $(this).val();
+        $('#formRemainder').show('slow');
+    });
+
+    // Hide the success/failure messages in the modal window, only show it when everything is ok
+    $('#modalMessageSuccess').hide();
+    $('#modalMessageFailure').hide();
 
     // Ajax the form
     var options = {
@@ -76,12 +147,15 @@
             $('h4#myModalLabel').html('Data successfully uploaded');
 
             // Make the message appear to fade in
-            $('#modalMessage').fadeOut('slow');
-            var message = '<div class="alert alert-danger" role="alert"><span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>';
-            message = message + '<strong><span class="sr-only">Error:</span> Oops! There were errors in your spreadsheet.</strong><hr>';
-            message = message + '<a href="' + data['error_sheet'] + '" role="button" class="btn btn-danger"><span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> Download the spreadsheet with highlighted errors</a> and try again.';
-            $('#modalMessage').html(message);
-            $('#modalMessage').fadeIn();
+            $('#modalMessage').hide();
+
+            // If there's any spreadsheet errors then show them, otherwise redirect to project page
+            if(data['error_sheet'] != 0) {
+                $('#spreadsheet-errors').attr('href', '/' + data['error_sheet']);
+                $('#modalMessageFailure').fadeIn();
+            } else {
+                $('#modalMessageSuccess').fadeIn();
+            }
         }
     }
     $('#upload-form').ajaxForm(options);
