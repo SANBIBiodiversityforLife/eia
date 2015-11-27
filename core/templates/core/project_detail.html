@@ -1,5 +1,36 @@
 {% extends "core/_base.html" %}
+{% load leaflet_tags %}
+
+{% block css %}
+{% leaflet_js %}
+{% leaflet_css %}
+{% endblock css %}
+
+{% block breadcrumb %}
+<a href="{% url 'project_list' %}" role="button" class="btn btn-default"><span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span> Return to all projects</a>
+{% endblock breadcrumb %}
+
 {% block content %}
-<h1>{{ project }} : {{ project.id }}</h1>
-<p><a href="{% url 'population_data_create' project.id %}">Add population data</a></p>
+<div class="row">
+    <div class="col-md-6"><h1>{{ project }} <small><a href="{% url 'population_data_create' project.id %}" type="button" class="btn btn-default">Add population data</a>
+    <a href="{% url 'population_data_create' project.id %}" type="button" class="btn btn-default">Add focal site data</a>
+    <a href="{% url 'population_data_create' project.id %}" type="button" class="btn btn-default">Add fatality data</a></small></h1></div>
+    <div class="col-md-6">
+
+    </div>
+</div>
+
+{% leaflet_map "main" callback="main_map_init" %}
+
 {% endblock content %}
+
+{% block js %}
+<script type="text/javascript">
+function main_map_init(map, options) {
+    // See http://blog.mathieu-leplatre.info/geodjango-maps-with-leaflet.html
+    var group = new L.geoJson({% autoescape off %}{{ geojson }}{% endautoescape %});
+    L.geoJson({% autoescape off %}{{ geojson }}{% endautoescape %}).addTo(map);
+    map.fitBounds(group.getBounds().pad(0.5));
+}
+</script>
+{% endblock js %}

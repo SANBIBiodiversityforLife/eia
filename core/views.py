@@ -14,6 +14,7 @@ import tempfile
 import os
 from django.conf import settings
 from core.spreadsheet_creation import create_population_data_spreadsheet
+from django.core.serializers import serialize
 
 
 class AjaxableResponseMixin(object):
@@ -173,6 +174,14 @@ class PopulationDataCreate(CreateView):
     template_name_suffix = '_create_form'
     form_class = forms.PopulationDataCreateForm
 
+
+def project_detail(request, pk):
+    project = models.Project.objects.filter(pk=pk)
+    geojson = serialize('geojson', project)
+    project = models.Project.objects.get(pk=pk)
+    return render_to_response('core/project_detail.html',
+                              {'geojson': geojson, 'project': project},
+                              RequestContext(request))
 
 '''def create_population_data(request, project_pk):
     metadata_form = forms.MetaDataCreateForm()

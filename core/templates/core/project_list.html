@@ -2,7 +2,7 @@
 {% block content %}
     <ul>
         {% for project in projects %}
-            <li>{{ project.current_name }}</li>
+            <li><a href="{% url 'project_detail' pk=project.id %}">{{ project.current_name }}</a></li>
         {% endfor %}
     </ul>
 {% endblock content %}

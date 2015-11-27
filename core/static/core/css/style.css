@@ -36,6 +36,7 @@ a#step-wrapper {
 .steps #step-wrapper {
     background: #fff8c9 url('/static/core/img/forms/step1.png') center 130px no-repeat;
     background-size: contain;
+    transform: rotate(-5deg);
 }
 .steps .step-2 div {
     background: #fff2a3 url('/static/core/img/forms/enable-editing.png') center 120px no-repeat;
