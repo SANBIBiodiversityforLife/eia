@@ -1,9 +1,21 @@
 {% extends "core/_base.html" %}
 {% load leaflet_tags %}
-{% block head %}
-    {% leaflet_js plugins="forms,draw" %}
-    {% leaflet_css plugins="forms,draw" %}
-{% endblock head %}
+
+{% block css %}
+{% leaflet_js plugins="forms,draw" %}
+{% leaflet_css plugins="forms,draw" %}
+{% endblock css %}
+
+{% block breadcrumb %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li><a href="{% url 'project_list' %}">Projects</a></li>
+  <li class="active">Create a project</li>
+</ol>
+{% endblock breadcrumb %}
+
+{% block header-text %}Create project{% endblock header-text %}
+
 {% block content %}
 <form action="" method="post">{% csrf_token %}
     {{ form.as_p }}
@@ -13,7 +25,13 @@
 
 {% block js %}
 <script language="javascript">
+/*function main_map_init(map, options) {
+    var southWest = new L.LatLng(-35.153957, 17.919771);
+    northEast = new L.LatLng(-21.203043, 33.320086);
+    bounds = new L.LatLngBounds(southWest, northEast);
+    map.fitBounds(bounds, {padding: []});
+    }
   $(document).ready(function() {
-  })
+  })*/
 </script>
 {% endblock %}

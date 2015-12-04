@@ -42,6 +42,7 @@ INSTALLED_APPS = (
     'core',
     'leaflet',
     'bootstrap3',
+    'django_filters',
 
     # django allauth
     'django.contrib.sites',
@@ -155,3 +156,13 @@ DATETIME_INPUT_FORMATS = ('%Y-%m-%d %H:%M',
                           )
 
 DATETIME_FORMAT = 'j N P'
+
+# Allauth settings
+# ACCOUNT_AUTHENTICATION_METHOD = 'email'
+
+# Leaflet-django https://github.com/makinacorpus/django-leaflet
+LEAFLET_CONFIG = {
+    'SPATIAL_EXTENT': (15, -35, 33, -21),
+    'DEFAULT_CENTER': (-29, 24.5),
+    'DEFAULT_ZOOM': 5,
+}

@@ -1,10 +1,13 @@
 {% extends "core/_base.html" %}
+{% load bootstrap3 %}
+
 {% block content %}
     <ul>
         {% for project in projects %}
             <li><a href="{% url 'project_detail' pk=project.id %}">{{ project.current_name }}</a></li>
         {% endfor %}
     </ul>
+    {% bootstrap_pagination page_obj %}
 {% endblock content %}
 
 {% block js %}

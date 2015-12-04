@@ -1,0 +1,42 @@
+{% extends "core/_base.html" %}
+{% load i18n %}
+{% load account socialaccount %}
+{% load bootstrap3 %}
+{% load static %}
+
+{% block head_title %}Sign in{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="{% static 'core/css/bootstrap-social.css' %}">
+{% endblock %}
+
+{% block header-text %}Sign in{% endblock %}
+
+{% block content %}
+{% get_providers as socialaccount_providers %}
+<div class="row">
+  <div class="col-xs-12 col-sm-10 col-md-8">
+    {% if socialaccount_providers %}
+      <div class="social-accounts">
+        {% include "socialaccount/snippets/provider_list.html" with process="login" %}
+      </div>
+      <h3>Or <a href="{{ signup_url }}">sign up for an account</a>.</h3>
+      <hr>
+      <h4><i class="fa fa-lightbulb-o"></i> Already have an account? Sign in:</h4>
+      {% include "socialaccount/snippets/login_extra.html" %}
+    {% endif %}
+
+    <form role="form" class="form-horizontal form-sign-in" method="POST" action="{% url 'account_login' %}">{% csrf_token %}
+      {% bootstrap_form form layout='horizontal' %}
+      {% if redirect_field_value %}
+      <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+      {% endif %}
+      {% buttons submit='Sign in' layout='horizontal' %}
+      <a href="{% url 'account_reset_password' %}">Forgot Password?</a>
+      <a class="btn btn-default pull-right" href="{{ signup_url }}" role="button">Sign up for an account</a>
+      {% endbuttons %}
+    </form>
+  </div>
+</div>
+{% endblock content %}

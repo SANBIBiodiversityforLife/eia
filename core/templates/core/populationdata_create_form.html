@@ -7,10 +7,19 @@
 {% endblock css %}
 
 {% block breadcrumb %}
-<a href="{% url 'project_detail' pk=project_pk %}" role="button" class="btn btn-default"><span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span> Return to the project</a>
+<!--<a href="{% url 'project_detail' pk=project_pk %}" role="button" class="btn btn-default"><span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span> Return to the project</a>-->
+
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li><a href="{% url 'project_list' %}">Projects</a></li>
+  <li><a href="{% url 'project_detail' pk=project_pk %}">Current project</a></li>
+  <li class="active">Upload population data</li>
+</ol>
 {% endblock breadcrumb %}
 
-{% block heading %}Upload count/population density data <small> for each species observed; this must be entered into the system in a very specific format.</small>{% endblock heading %}
+{% block header-text %}
+  Upload population data <small> for each species observed; this must be entered into the system in a very specific format.</small>
+{% endblock header-text %}
 
 {% block content %}
 <!-- Modal -->

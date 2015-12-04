@@ -8,20 +8,47 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
 
     <!-- Bootstrap CSS -->
-    <!--<link rel="stylesheet" href="https://cdn.rawgit.com/twbs/bootstrap/v4-dev/dist/css/bootstrap.css">-->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
     <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
     {% block css %}{% endblock %}
+
+    <title>{% block head_title %}SANBI's EIA database{% endblock %}</title>
   </head>
   <body>
-    <div class="container">
-        <header class="row">
-            <h1 class="col-md-8"><a href="/"><img src="{% static 'core/img/logo.png' %}" alt="SANBI's Environmental Impact Assessment Database"></a></h1>
-            <div class="col-md-4">&nbsp;</div>
-        </header>
+    <nav class="navbar navbar-default">
+        <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              <a href="/" class="navbar-brand"><img src="{% static 'core/img/logo.png' %}" alt="SANBI's Environmental Impact Assessment Database"></a>
+            </div>
 
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="navbar-collapse">
+              {% if request.user.is_authenticated %}
+              <ul class="nav navbar-nav">
+                <li class="active"><a href="#">Projects<span class="sr-only">(current)</span></a></li>
+              </ul>
+              {% endif %}
+              <ul class="nav navbar-nav navbar-right">
+                    {% if request.user.is_authenticated %}
+                    <li><a href="#">View my profile</a></li>
+                    <li><a href="/accounts/logout/">Logout</a></li>
+                    {% else %}
+                    <li><a href="/accounts/login/">Login</a></li>
+                    {% endif %}
+              </ul>
+            </div><!-- /.navbar-collapse -->
+        </div><!-- /.container -->
+    </nav>
+    <div class="container">
         {% block breadcrumb %}{% endblock %}
-        <h1 class="page-header">{% block heading %}{% endblock %}</h1>
+        {% block header %}<h1 class="page-header">{% block header-text %}{% endblock %}</h1>{% endblock %}
         {% block content %}{% endblock %}
         <footer>
             <p>In partnership with the South African Department of Environmental Affairs</p>
@@ -30,7 +57,6 @@
     </div>
     <!-- jQuery first, then Bootstrap JS. -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-    <!--<script src="https://cdn.rawgit.com/twbs/bootstrap/v4-dev/dist/js/bootstrap.js"></script>-->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" integrity="sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ==" crossorigin="anonymous"></script>
     {% block js %}{% endblock %}
   </body>

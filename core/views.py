@@ -1,5 +1,5 @@
 #from django.shortcuts import render
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, render
 from django.template import RequestContext
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, FormView
 from core import models, forms
@@ -15,7 +15,10 @@ import os
 from django.conf import settings
 from core.spreadsheet_creation import create_population_data_spreadsheet
 from django.core.serializers import serialize
+from django.contrib.auth.decorators import login_required
 
+def index(request):
+    return render(request, 'core/index.html',{'stats': 'hello'})
 
 class AjaxableResponseMixin(object):
     """
@@ -54,12 +57,6 @@ class PopulationDataCreateView(FormView):#class PopulationDataCreateView(Ajaxabl
     template_name = 'core/populationdata_create_form.html'
     form_class = forms.MetaDataCreateForm
     # create_population_data_spreadsheet()
-
-    # tmp_dir = os.path.join(settings.BASE_DIR, 'core', 'static', 'core', 'tmp')
-    # fd, unique_file = tempfile.mkstemp(suffix='.xlsx', prefix='pop_', dir=tmp_dir)
-    # os.close(fd)
-    # print(os.path.join('static', 'core', 'tmp', os.path.basename(os.path.relpath(unique_file))))
-    # TODO the above is terrible and must be fixed, serve the files through a proper webserver
 
     def get_success_url(self):
         return reverse('project_detail', args={'pk': self.kwargs['project_pk']})
@@ -104,19 +101,7 @@ class PopulationDataCreateView(FormView):#class PopulationDataCreateView(Ajaxabl
             return JsonResponse(data)
         else:
             return HttpResponseRedirect(self.get_success_url())
-'''
-    # This method is called when valid form data has been POSTed. It should return an HttpResponse.
-    def form_valid(self, form):
-        # This is taking a long time...
-        print('form_valid is running')
 
-        # Run the data processing function
-        form.process_data(project_pk=self.kwargs['project_pk'])
-
-        # I don't think we need to run the super function, as the process_data should have taken care of all that
-        # return super(PopulationDataCreateView, self).form_valid(form)
-
-        return HttpResponseRedirect(self.get_success_url())'''
 
 class FocalSiteDataCreate(CreateView):
     model = models.FocalSiteData
@@ -130,9 +115,34 @@ class FocalSiteCreate(CreateView):
     form_class = forms.FocalSiteCreateForm
 
 
+import django_filters
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+class ProjectFilter(django_filters.FilterSet):
+    class Meta:
+        model = models.Project
+        fields = ['current_name', 'current_developer']
+
+def project_list(request):
+    f = ProjectFilter(request.GET, queryset=models.Project.objects.all())
+
+    paginator = Paginator(f.qs, 100) # Show 100 events per page
+    page = request.GET.get('page')
+    try:
+        projects = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        projects = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        projects = paginator.page(paginator.num_pages)
+
+    return render(request, 'core/project_list_test.html', {'projects': projects, 'filter': f})
+
 class ProjectList(ListView):
     model = models.Project
     context_object_name = 'projects'
+    paginate_by = 10
 
 
 class ProjectDetail(DetailView):
@@ -175,6 +185,7 @@ class PopulationDataCreate(CreateView):
     form_class = forms.PopulationDataCreateForm
 
 
+@login_required
 def project_detail(request, pk):
     project = models.Project.objects.filter(pk=pk)
     geojson = serialize('geojson', project)
@@ -182,38 +193,3 @@ def project_detail(request, pk):
     return render_to_response('core/project_detail.html',
                               {'geojson': geojson, 'project': project},
                               RequestContext(request))
-
-'''def create_population_data(request, project_pk):
-    metadata_form = forms.MetaDataCreateForm()
-
-    if request.POST:
-            metadata_form = forms.MetaDataCreateForm(request.POST, prefix='meta')
-            data_form = forms.PopulationDataCreateForm(request.POST, request.FILES, prefix='meta')
-
-            if metadata_form.is_valid() and data_form.is_valid():
-                    # Prepare & save the metadata
-                    metadata = metadata_form.save(commit=False)
-                    metadata.project = models.Project.objects.get(pk=project_pk)
-                    metadata.save()
-
-                    # Parse the spreadsheet and get the data
-                    data = request.FILES['spreadsheet']
-
-                    # Prepare & save the data
-                    data = data_form.save(commit=False)
-                    data.metadata = metadata
-                    data.save()
-
-    # Create a spreadsheet with validation for them on-the-fly - note we may need to change this if it impacts performance
-    workbook = xlsxwriter.Workbook('population_data_for_upload.xlsx')
-    worksheet = workbook.add_worksheet()
-    worksheet.write('A1', 'Hello world')
-    workbook.close()
-
-    return render_to_response('core/populationdata_create_form.html', {
-        'metadata_form': metadata_form,
-        'data_form': data_form,
-        'project_pk': project_pk,
-        },
-        RequestContext(request))'''
-

@@ -1,7 +1,13 @@
 from django.contrib.gis.db import models
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
 
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    first_name = models.CharField(max_length=100)
+    surname = models.CharField(max_length=100)
+    phone = models.CharField(max_length=100)
 
 class Developer(models.Model):
     """The companies who run the projects."""

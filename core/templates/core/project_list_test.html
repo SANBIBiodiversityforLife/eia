@@ -1,0 +1,36 @@
+{% extends "core/_base.html" %}
+{% load bootstrap3 %}
+
+{% block breadcrumb %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li class="active">Projects</li>
+</ol>
+{% endblock breadcrumb %}
+
+{% block header-text %}Project list{% endblock header-text %}
+
+{% block content %}
+<a href="{% url 'project_create' %}" role="button" class="btn btn-default"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add a new project</a>
+
+<form action="" method="get">
+    {% bootstrap_form filter.form %}
+    <input type="submit" />
+</form>
+<table>
+{% for project in projects %}
+    <tr>
+        <td><a href="{% url 'project_detail' pk=project.id %}">{{ project.current_name }}</a></td>
+        <td>{{ project.current_developer }}</td>
+    </tr>
+{% endfor %}
+</table>
+{% bootstrap_pagination projects %}
+{% endblock %}
+
+{% block js %}
+<script language="javascript">
+  $(document).ready(function() {
+  })
+</script>
+{% endblock %}
