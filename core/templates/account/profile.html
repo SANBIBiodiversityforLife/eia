@@ -1,0 +1,24 @@
+{% extends "core/_base.html" %}
+
+{% block header-text %}Your Profile{% endblock %}
+
+{% block breadcrumb %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li class="active">Profile</li>
+</ol>
+{% endblock breadcrumb %}
+
+{% block content %}
+{% if user %}
+    <h2>Welcome, {{ user.first_name }} {{ user.last_name }}</h2>
+    Phone: {{ user.profile.phone }}
+    Type: {{ user.profile.type }}
+    {% for account in user.socialaccount_set.all %}
+        <h2 style="text-transform:capitalize;">{{ account.provider }} account data</h2>
+        <p><img width="50" height="50" src="{{ account.get_avatar_url }}" /></p>
+        <p>UID: <a href="{{account.extra_data.link }}">{{ account.uid }}</a></p>
+        <p>Profile Link: <a href="{{ account.extra_data.link }}">{{ account.extra_data.link }}</a></p>
+    {% endfor %}
+{% endif %}
+{% endblock content %}

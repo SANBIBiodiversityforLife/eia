@@ -21,6 +21,9 @@ from django.contrib.auth.decorators import login_required
 urlpatterns = [
     # Django allauth
     url(r'^accounts/', include('allauth.urls')),
+    #url(r'^accounts/profile/', login_required(views.ProfileDetail.as_view()), name='profile_detail'),
+    url(r'^accounts/profile/', login_required(views.TemplateView.as_view(template_name='account/profile.html')), name='profile_detail'),
+    url(r'^accounts/profile/edit$', login_required(views.ProfileUpdate.as_view()), name='profile_update'),
 
     # Admin section
     url(r'^admin/', include(admin.site.urls)),
@@ -29,17 +32,19 @@ urlpatterns = [
     url(r'^$', views.index, name='index'),
 
     #url(r'^projects/(?P<developer>[\w-]+)/$', login_required(views.ProjectList.as_view()), name='project_list'),
-    url(r'^projects$', login_required(views.project_list), name='project_list'),
+    url(r'^projects/$', login_required(views.project_list), name='projects_list'),
+    url(r'^projects-map/$', login_required(views.projects_map), name='projects_map'),
 
     # Project related URLs
     #url(r'^project/(?P<pk>[0-9]+)/$', views.ProjectDetail.as_view(), name='project_detail'),
-    url(r'^project/(?P<pk>[0-9]+)/$', views.project_detail, name='project_detail'),
+    url(r'^project/(?P<pk>[0-9]+)/$', login_required(views.project_detail), name='project_detail'),
     url(r'^project/create/$', login_required(views.ProjectCreate.as_view()), name='project_create'),
     url(r'^project/update/(?P<pk>[0-9]+)/$', login_required(views.ProjectUpdate.as_view()), name='project_update'),
     url(r'^project_delete/(?P<pk>[0-9]+)/$', login_required(views.ProjectDelete.as_view()), name='project_delete'),
 
     # Developer
     url(r'^developer/create/$', login_required(views.DeveloperCreate.as_view()), name='developer_create'),
+    url(r'^developer/(?P<pk>[0-9]+)/$', login_required(views.DeveloperDetail.as_view()), name='developer_detail'),
 
     # Data related URLs
     url(r'^project/(?P<project_pk>[0-9]+)/data/', login_required(views.DataList.as_view()), name='data_list'),

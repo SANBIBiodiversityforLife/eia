@@ -1,5 +1,7 @@
 {% extends "core/_base.html" %}
 {% load leaflet_tags %}
+{% load bootstrap3 %}
+{% load static %}
 
 {% block css %}
 {% leaflet_js plugins="forms,draw" %}
@@ -9,7 +11,7 @@
 {% block breadcrumb %}
 <ol class="breadcrumb">
   <li><a href="#">Home</a></li>
-  <li><a href="{% url 'project_list' %}">Projects</a></li>
+  <li><a href="{% url 'projects_list' %}">Projects</a></li>
   <li class="active">Create a project</li>
 </ol>
 {% endblock breadcrumb %}
@@ -17,21 +19,82 @@
 {% block header-text %}Create project{% endblock header-text %}
 
 {% block content %}
-<form action="" method="post">{% csrf_token %}
-    {{ form.as_p }}
-    <input type="submit" value="Create" />
+<form role="form" class="form-horizontal form-sign-in" action="" method="post">{% csrf_token %}
+  {% bootstrap_form_errors form %}
+  {% bootstrap_form form layout='horizontal' %}
+  {% buttons submit='Create' layout='horizontal' %}{% endbuttons %}
 </form>
+
+<!-- Modal -->
+<div class="modal fade" id="developerModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Add a developer</h4>
+      </div>
+      <form role="form" class="form-horizontal" action="{% url 'developer_create' %}" method="post" id="developerForm">{% csrf_token %}
+        <div class="modal-body">
+          {% bootstrap_form developer_form layout='horizontal' %}
+        </div>
+        <div class="modal-footer">
+          {% buttons submit='Save' layout='horizontal' %}
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          {% endbuttons %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock content %}
 
 {% block js %}
+<script src='{% static "core/js/jquery.form.min.js" %}'></script>
+<script src='{% static "core/js/validator.min.js" %}'></script>
 <script language="javascript">
 /*function main_map_init(map, options) {
     var southWest = new L.LatLng(-35.153957, 17.919771);
     northEast = new L.LatLng(-21.203043, 33.320086);
     bounds = new L.LatLngBounds(southWest, northEast);
     map.fitBounds(bounds, {padding: []});
-    }
+    }*/
   $(document).ready(function() {
-  })*/
+    add_developer = $('#id_developer').parent();
+    //add_developer.removeClass('col-md-9').addClass('col-md-5');
+    $('.form-sign-in .col-md-9').removeClass('col-md-9').addClass('col-md-5');
+    var add_developer_text = '<div class="col-md-4" style="padding-top: 7px">Developer not in the list? <a data-toggle="modal" data-target="#developerModal" class="" href="#" role="button">Add a developer</a></div>';
+    add_developer.parent().append(add_developer_text);
+
+    $('#developerForm label.col-md-3').addClass('col-md-2').removeClass('col-md-3');
+
+    // Ajax the form
+    var options = {
+        dataType: 'json',
+        success: function(data) {
+            // Change the header
+            $('h4#myModalLabel').html('Data successfully uploaded');
+            $('#id_developer').append($('<option>', {
+                value: data.pk,
+                text: data.name,
+                selected: "selected"
+            }));
+            $('#developerModal').modal('hide');
+        }
+    }
+    $('#developerForm').ajaxForm(options);
+
+
+
+
+    /*add_developer = $('#id_developer').parent();
+    add_developer.wrapInner('<div class="input-group"></div>');
+
+    var addon = '<div class="input-group-btn">';
+    addon += '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-question-sign glyphicon-align-left" aria-hidden="true"></span> Developer not in the list? <span class="caret"></span></button>';
+    addon += '<ul class="dropdown-menu dropdown-menu-right">';
+    addon += '<li><a href="">Add a developer</a></li></ul></div><!-- /input-group-btn -->';
+    add_developer.children('.input-group').append(addon);*/
+
+  })
 </script>
 {% endblock %}

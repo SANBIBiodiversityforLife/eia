@@ -52,6 +52,8 @@ INSTALLED_APPS = (
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.linkedin',
     'allauth.socialaccount.providers.twitter',
+
+    # TODO add mollom https://github.com/marconi/django-mollom
 )
 
 # django allauth
@@ -158,7 +160,11 @@ DATETIME_INPUT_FORMATS = ('%Y-%m-%d %H:%M',
 DATETIME_FORMAT = 'j N P'
 
 # Allauth settings
-# ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_SIGNUP_FORM_CLASS = 'core.forms.SignupForm'
+LOGIN_REDIRECT_URL = '/projects/'
 
 # Leaflet-django https://github.com/makinacorpus/django-leaflet
 LEAFLET_CONFIG = {

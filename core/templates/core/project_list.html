@@ -1,14 +1,55 @@
 {% extends "core/_base.html" %}
 {% load bootstrap3 %}
 
+{% block breadcrumb %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li class="active">Projects</li>
+</ol>
+{% endblock breadcrumb %}
+
+{% block header-text %}
+Projects
+<a href="{% url 'projects_map' %}" role="button" class="btn btn-success btn-lg">
+  <span class="glyphicon glyphicon-picture" aria-hidden="true"></span> Map view
+</a>
+<a href="{% url 'project_create' %}" role="button" class="btn btn-info pull-right">
+  <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add a new project
+</a>
+{% endblock header-text %}
+
 {% block content %}
-    <ul>
-        {% for project in projects %}
-            <li><a href="{% url 'project_detail' pk=project.id %}">{{ project.current_name }}</a></li>
-        {% endfor %}
-    </ul>
-    {% bootstrap_pagination page_obj %}
-{% endblock content %}
+
+
+<form role="form" class="form-inline" action="" method="get">
+    Search by name or developer: {% bootstrap_form filter.form layout='inline'  %}
+    <input type="submit" />
+</form>
+<hr>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Developer</th>
+      <th>Energy</th>
+      <th>Last activity</th>
+      <th>Project operational</th>
+    </tr>
+  </thead>
+  <tbody>
+{% for project in projects %}
+    <tr>
+        <td><a href="{% url 'project_detail' pk=project.id %}">{{ project }}</a></td>
+        <td>{{ project.developer }}</td>
+        <td>{{ project.get_energy_type_display }}</td>
+        <td>{{ project.operational_date }}</td>
+        <td>{{ project.developer }}</td>
+    </tr>
+{% endfor %}
+  </tbody>
+</table>
+{% bootstrap_pagination projects %}
+{% endblock %}
 
 {% block js %}
 <script language="javascript">

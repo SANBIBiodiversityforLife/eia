@@ -4,26 +4,30 @@
 {% load bootstrap3 %}
 {% load static %}
 
-{% block head_title %}Sign in{% endblock %}
-
 {% block css %}
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="{% static 'core/css/bootstrap-social.css' %}">
 {% endblock %}
 
-{% block header-text %}Sign in{% endblock %}
+{% block header-text %}Login{% endblock %}
+
+{% block breadcrumb %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li class="active">Login</li>
+</ol>
+{% endblock breadcrumb %}
 
 {% block content %}
 {% get_providers as socialaccount_providers %}
 <div class="row">
-  <div class="col-xs-12 col-sm-10 col-md-8">
+  <div class="col-xs-12 col-md-9">
     {% if socialaccount_providers %}
       <div class="social-accounts">
         {% include "socialaccount/snippets/provider_list.html" with process="login" %}
       </div>
-      <h3>Or <a href="{{ signup_url }}">sign up for an account</a>.</h3>
       <hr>
-      <h4><i class="fa fa-lightbulb-o"></i> Already have an account? Sign in:</h4>
+      <h3><i class="fa fa-lightbulb-o"></i> If you have a SANBI EIA database account sign in below. <small>Or <a href="{{ signup_url }}">sign up for an account</a>.</small></h3>
       {% include "socialaccount/snippets/login_extra.html" %}
     {% endif %}
 

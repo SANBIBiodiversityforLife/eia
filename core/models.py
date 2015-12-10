@@ -2,21 +2,40 @@ from django.contrib.gis.db import models
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
+from core.multiple_select_field import MultipleSelectField
+
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=100)
-    surname = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
     phone = models.CharField(max_length=100)
+    #profile_type_choices = models.ManyToManyField(ProfileTypeChoices)
+
+    TYPE_CHOICES = (
+        ('NG', 'NGO employee'),
+        ('AC', 'Academic'),
+        ('EI', 'EIA consultant'),
+        ('PU', 'Member of the public'),
+        ('BA', 'Bat specialist'),
+        ('BI', 'Bird specialist'),
+        ('DE', 'Developer'),
+        ('OT', 'Other')
+    )
+    type = models.CharField(max_length=2, choices=TYPE_CHOICES)
+    # type = MultipleSelectField(max_length=2, choices=TYPE_CHOICES, null=True, blank=True)
 
 class Developer(models.Model):
     """The companies who run the projects."""
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
     email = models.CharField(max_length=50)
     phone = models.CharField(max_length=15)
 
     def __str__(self):
         return self.name
+
+    def get_absolute_url(self):
+        return reverse('developer_detail', kwargs={'pk': self.pk})
 
 
 class TurbineMake(models.Model):
@@ -29,8 +48,15 @@ class TurbineMake(models.Model):
 
 class Project(models.Model):
     """A renewable energy development."""
-    current_name = models.CharField(max_length=50)
-    current_developer = models.ForeignKey(Developer)
+    # This information can change over time
+    # However, I am storing it in the main table as it is UNLIKELY for most projects that they will experience name and
+    # developer changes. Usually names will stay the same and so will the developer.
+    # See http://stackoverflow.com/questions/2253962/should-i-add-this-new-column-to-customers-table-or-to-a-separate-new-table
+    # http://stackoverflow.com/questions/2834361/should-i-store-logging-information-in-main-database-table
+    name = models.CharField(max_length=50, unique=True)
+    developer = models.ForeignKey(Developer)
+
+    # Additional information
     location = models.PolygonField()
     objects = models.GeoManager()
     eia_number = models.CharField(max_length=20)
@@ -44,7 +70,7 @@ class Project(models.Model):
     energy_type = models.CharField(max_length=1, choices=ENERGY_TYPE_CHOICES, default=WIND)
 
     # Operation details
-    operation_date = models.DateField(null=True, blank=True)
+    operational_date = models.DateField(null=True, blank=True)
     construction_date = models.DateField(null=True, blank=True)
     turbine_locations = models.MultiPointField(null=True, blank=True)
     turbine_make = models.ForeignKey(TurbineMake, null=True, blank=True)
@@ -52,10 +78,14 @@ class Project(models.Model):
     turbine_height = models.IntegerField(null=True, blank=True)
 
     def get_absolute_url(self):
-        return reverse('project_detail', kwargs={'pk': self.pk})
+        return reverse('project_update', kwargs={'pk': self.pk})
 
     def __str__(self):
-        return self.current_name
+        return self.name
+
+    # Add a popup for the maps, see http://fle.github.io/easy-webmapping-with-django-leaflet-and-django-geojson.html
+    def popup_content(self):
+        return self.name + ' ' + self.developer
 
 
 class PreviousProjectNames(models.Model):

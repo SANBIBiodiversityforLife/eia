@@ -1,0 +1,27 @@
+{% extends "core/_base.html" %}
+{% load i18n %}
+{% load bootstrap3 %}
+{% load static %}
+
+{% block header-text %}Sign up{% endblock %}
+
+{% block breadcrumb %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li class="active">Sign up</li>
+</ol>
+{% endblock breadcrumb %}
+
+{% block content %}
+<p>{% blocktrans %}Already have an account? Then please <a href="{{ login_url }}">sign in</a>.{% endblocktrans %}</p>
+
+<form role="form" class="form-horizontal form-sign-in" method="POST" action="{% url 'account_signup' %}">{% csrf_token %}
+  {% bootstrap_form form layout='horizontal' %}
+  {% if redirect_field_value %}
+  <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+  {% endif %}
+  {% buttons submit='Sign up' layout='horizontal' %}
+  <a class="btn btn-default pull-right" href="{{ login_url }}" role="button">Log in to a pre-existing account</a>
+  {% endbuttons %}
+</form>
+{% endblock %}

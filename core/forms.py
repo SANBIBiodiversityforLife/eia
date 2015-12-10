@@ -3,7 +3,7 @@ from django import forms
 from django.db import models
 #from django.core.exceptions import DoesNotExist
 from leaflet.forms.widgets import LeafletWidget
-from core.models import Project, PopulationData, Taxa, TaxaOrder, FocalSite, FocalSiteData, MetaData
+from core.models import Project, PopulationData, Taxa, TaxaOrder, FocalSite, FocalSiteData, MetaData, Profile, Developer
 from core import validators
 from openpyxl import load_workbook
 #from django.contrib.staticfiles.templatetags.staticfiles import static
@@ -14,12 +14,45 @@ import tempfile
 import os
 from django.conf import settings
 from core.spreadsheet_creation import population_data_spreadsheet_validation
+from django.contrib.auth import get_user_model
+
+
+'''class SignupForm(forms.Form):
+    first_name = forms.CharField(max_length=30, label='Voornaam')
+    last_name = forms.CharField(max_length=30, label='Achternaam')'''
+
+
+class SignupForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ('first_name', 'last_name', 'phone', 'type')
+
+    # A custom method required to work with django-allauth, see https://stackoverflow.com/questions/12303478/how-to-customize-user-profile-when-using-django-allauth
+    def signup(self, request, user):
+        # Save your user
+        user.first_name = self.cleaned_data['first_name']
+        user.last_name = self.cleaned_data['last_name']
+        user.save()
+
+        # Save your profile
+        profile = Profile()
+        profile.user = user
+        profile.phone = self.cleaned_data['phone']
+        profile.type = self.cleaned_data['type']
+        profile.save()
+
 
 class ProjectCreateForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ('current_name', 'location', 'current_developer', 'eia_number', 'energy_type')
+        fields = ('name', 'location', 'developer', 'eia_number', 'energy_type')
         widgets = {'location': LeafletWidget()}
+
+
+class DeveloperCreateForm(forms.ModelForm):
+    class Meta:
+        model = Developer
+        fields = ('name', 'email', 'phone')
 
 
 class FocalSiteCreateForm(forms.ModelForm):
@@ -38,14 +71,15 @@ class FocalSiteDataCreateForm(forms.ModelForm):
 class ProjectUpdateForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ('current_name', 'location', 'current_developer', 'eia_number', 'energy_type')
-        widgets = {'location': LeafletWidget()}
+        fields = ('operational_date', 'construction_date', 'turbine_locations', 'turbine_make', 'turbine_capacity',
+                  'turbine_height', 'name', 'location', 'developer', 'eia_number', 'energy_type')
+        widgets = {'location': LeafletWidget(), 'turbine_locations': LeafletWidget()}
 
 
 class ProjectDeleteForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ('current_name', 'location', 'current_developer', 'eia_number', 'energy_type')
+        fields = ('name', 'location', 'developer', 'eia_number', 'energy_type')
         widgets = {'location': LeafletWidget()}
 
 

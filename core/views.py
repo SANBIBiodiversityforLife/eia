@@ -1,7 +1,7 @@
 #from django.shortcuts import render
 from django.shortcuts import render_to_response, render
 from django.template import RequestContext
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, FormView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, FormView, TemplateView
 from core import models, forms
 from django.http import HttpResponseRedirect, HttpResponse
 
@@ -16,11 +16,39 @@ from django.conf import settings
 from core.spreadsheet_creation import create_population_data_spreadsheet
 from django.core.serializers import serialize
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
 
 def index(request):
-    return render(request, 'core/index.html',{'stats': 'hello'})
+    return render(request, 'core/index.html', {'stats': 'hello'})
 
 class AjaxableResponseMixin(object):
+    """
+    Mixin to add AJAX support to a form.
+    Must be used with an object-based FormView (e.g. CreateView)
+    """
+    def form_invalid(self, form):
+        response = super(AjaxableResponseMixin, self).form_invalid(form)
+        if self.request.is_ajax():
+            return JsonResponse(form.errors, status=400)
+        else:
+            return response
+
+    def form_valid(self, form):
+        # We make sure to call the parent's form_valid() method because
+        # it might do some processing (in the case of CreateView, it will
+        # call form.save() for example).
+        response = super(AjaxableResponseMixin, self).form_valid(form)
+        if self.request.is_ajax():
+            data = {
+                'pk': self.object.pk,
+                'name': self.object.name,
+            }
+            return JsonResponse(data)
+        else:
+            return response
+
+
+class AjaxableResponseMixinDataCreate(object):
     """
     Mixin to add AJAX support to a form.
     Must be used with an object-based FormView (e.g. CreateView)
@@ -51,6 +79,16 @@ class AjaxableResponseMixin(object):
             return JsonResponse(data)
         else:
             return HttpResponseRedirect(self.get_success_url())
+
+
+class ProfileDetail(DetailView):
+    model = get_user_model()
+    context_object_name = 'profile'
+
+
+class ProfileUpdate(UpdateView):
+    model = get_user_model()
+    fields = ['first_name', 'last_name', 'phone', 'type']
 
 
 class PopulationDataCreateView(FormView):#class PopulationDataCreateView(AjaxableResponseMixin, FormView):
@@ -121,7 +159,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 class ProjectFilter(django_filters.FilterSet):
     class Meta:
         model = models.Project
-        fields = ['current_name', 'current_developer']
+        fields = ['name', 'developer']
 
 def project_list(request):
     f = ProjectFilter(request.GET, queryset=models.Project.objects.all())
@@ -137,12 +175,7 @@ def project_list(request):
         # If page is out of range (e.g. 9999), deliver last page of results.
         projects = paginator.page(paginator.num_pages)
 
-    return render(request, 'core/project_list_test.html', {'projects': projects, 'filter': f})
-
-class ProjectList(ListView):
-    model = models.Project
-    context_object_name = 'projects'
-    paginate_by = 10
+    return render(request, 'core/project_list.html', {'projects': projects, 'filter': f})
 
 
 class ProjectDetail(DetailView):
@@ -155,12 +188,26 @@ class ProjectCreate(CreateView):
     template_name_suffix = '_create_form'
     form_class = forms.ProjectCreateForm
 
+    # TODO we need to allow people to upload shape files see https://docs.djangoproject.com/en/1.9/ref/contrib/gis/tutorial/
+
+    def get_context_data(self, **kwargs):
+        context = super(ProjectCreate, self).get_context_data(**kwargs)
+        if 'developer_form' not in context:
+            context['developer_form'] = forms.DeveloperCreateForm()
+        return context
 
 class ProjectUpdate(UpdateView):
     model = models.Project
     template_name_suffix = '_update_form'
     form_class = forms.ProjectUpdateForm
 
+    # TODO we need to allow people to upload shape files see https://docs.djangoproject.com/en/1.9/ref/contrib/gis/tutorial/
+
+    def get_context_data(self, **kwargs):
+        context = super(ProjectUpdate, self).get_context_data(**kwargs)
+        if 'developer_form' not in context:
+            context['developer_form'] = forms.DeveloperCreateForm()
+        return context
 
 class ProjectDelete(DeleteView):
     model = models.Project
@@ -172,6 +219,32 @@ class DeveloperCreate(CreateView):
     model = models.Developer
     fields = ['name', 'email', 'phone']
     template_name_suffix = '_create_form'
+
+    def form_invalid(self, form):
+        response = super(DeveloperCreate, self).form_invalid(form)
+        if self.request.is_ajax():
+            return JsonResponse(form.errors, status=400)
+        else:
+            return response
+
+    def form_valid(self, form):
+        # We make sure to call the parent's form_valid() method because
+        # it might do some processing (in the case of CreateView, it will
+        # call form.save() for example).
+        response = super(DeveloperCreate, self).form_valid(form)
+        if self.request.is_ajax():
+            data = {
+                'pk': self.object.pk,
+                'name': self.object.name,
+            }
+            return JsonResponse(data)
+        else:
+            return response
+
+
+class DeveloperDetail(DetailView):
+    model = models.Developer
+    context_object_name = 'developer'
 
 
 class DataList(ListView):
@@ -192,4 +265,11 @@ def project_detail(request, pk):
     project = models.Project.objects.get(pk=pk)
     return render_to_response('core/project_detail.html',
                               {'geojson': geojson, 'project': project},
+                              RequestContext(request))
+
+def projects_map(request):
+    projects = models.Project.objects.all()[:1000]
+    geojsons = serialize('geojson', projects)
+    return render_to_response('core/projects_map.html',
+                              {'geojson': geojsons},
                               RequestContext(request))

@@ -1,0 +1,51 @@
+{% extends "core/_base.html" %}
+{% load leaflet_tags %}
+
+{% block css %}
+{% leaflet_js %}
+{% leaflet_css %}
+{% endblock css %}
+
+{% block breadcrumb %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li><a href="{% url 'projects_list' %}">Projects</a></li>
+  <li class="active">Map</li>
+</ol>
+{% endblock breadcrumb %}
+
+{% block header-text %}
+Projects
+<a href="{% url 'projects_list' %}" role="button" class="btn btn-success btn-lg">
+  <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span> List view
+</a>
+<a href="{% url 'project_create' %}" role="button" class="btn btn-info pull-right">
+  <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add a new project
+</a>
+{% endblock header-text %}
+
+{% block content %}
+
+<div id="projectsMap">{% leaflet_map "main" callback="main_map_init" %}</div>
+
+{% endblock content %}
+
+{% block js %}
+<script type="text/javascript">
+function onEachFeature(feature, layer) {
+  console.log(feature);
+  if (feature.properties) {
+    var popupContent = feature.properties.name + ' <br>';
+    popupContent += '<a href="/project/' + feature.properties.name + '" class="btn btn-default">View project</a>';
+    layer.bindPopup(popupContent);
+  }
+}
+
+function main_map_init(map, options) {
+    // See http://blog.mathieu-leplatre.info/geodjango-maps-with-leaflet.html
+    var group = new L.geoJson({% autoescape off %}{{ geojson }}{% endautoescape %});
+    L.geoJson({% autoescape off %}{{ geojson }}{% endautoescape %}, {onEachFeature: onEachFeature}).addTo(map);
+    map.fitBounds(group.getBounds().pad(0.5));
+}
+</script>
+{% endblock js %}

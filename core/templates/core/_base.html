@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
     {% block css %}{% endblock %}
 
-    <title>{% block head_title %}SANBI's EIA database{% endblock %}</title>
+    <title>SANBI's EIA database</title>
   </head>
   <body>
     <nav class="navbar navbar-default">
@@ -32,12 +32,12 @@
             <div class="collapse navbar-collapse" id="navbar-collapse">
               {% if request.user.is_authenticated %}
               <ul class="nav navbar-nav">
-                <li class="active"><a href="#">Projects<span class="sr-only">(current)</span></a></li>
+                <li class="active"><a href="{% url 'projects_list' %}">Projects<span class="sr-only">(current)</span></a></li>
               </ul>
               {% endif %}
               <ul class="nav navbar-nav navbar-right">
                     {% if request.user.is_authenticated %}
-                    <li><a href="#">View my profile</a></li>
+                    <li><a href="{% url 'profile_update' %}">Edit my account</a></li>
                     <li><a href="/accounts/logout/">Logout</a></li>
                     {% else %}
                     <li><a href="/accounts/login/">Login</a></li>

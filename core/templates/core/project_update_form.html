@@ -1,19 +1,121 @@
 {% extends "core/_base.html" %}
 {% load leaflet_tags %}
-{% block head %}
-    {% leaflet_js plugins="forms,draw" %}
-    {% leaflet_css plugins="forms,draw" %}
-{% endblock head %}
+{% load bootstrap3 %}
+{% load static %}
+
+{% block css %}
+{% leaflet_js plugins="forms,draw" %}
+{% leaflet_css plugins="forms,draw" %}
+<link href='{% static "datetimepicker/jquery.datetimepicker.css" %}' rel="stylesheet">
+{% endblock css %}
+
+{% block breadcrumb %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li><a href="{% url 'projects_list' %}">Projects</a></li>
+  <li class="active">Edit project details</li>
+</ol>
+{% endblock breadcrumb %}
+
+{% block header-text %}Edit project details{% endblock header-text %}
+
 {% block content %}
-<form action="" method="post">{% csrf_token %}
-    {{ form.as_p }}
-    <input type="submit" value="Update" />
+<div class="row"><div class="col-md-9 col-md-offset-3">
+<ul class="nav nav-pills">
+  <li role="presentation" class="active" id="operationalFormNav"><a href="#">Operational info</a></li>
+  <li role="presentation" id="detailFormNav"><a href="#">Project details</a></li>
+</ul></div></div>
+<form role="form" class="form-horizontal form-sign-in" action="" method="post">{% csrf_token %}
+  <!--{% bootstrap_form form layout='horizontal' %}-->
+  <div id="operationalForm">
+  {% for field in form %}
+    {% if field.name == "name" %}
+    </div>
+    <div id="detailsForm">
+    {% endif %}
+    {% bootstrap_field field layout='horizontal' %}
+  {% endfor %}
+    </div>
+  {% buttons submit='Create' layout='horizontal' %}{% endbuttons %}
 </form>
+
+<!-- Modal -->
+<div class="modal fade" id="developerModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Add a developer</h4>
+      </div>
+      <form role="form" class="form-horizontal" action="{% url 'developer_create' %}" method="post" id="developerForm">{% csrf_token %}
+        <div class="modal-body">
+          {% bootstrap_form developer_form layout='horizontal' %}
+        </div>
+        <div class="modal-footer">
+          {% buttons submit='Save' layout='horizontal' %}
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          {% endbuttons %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock content %}
 
 {% block js %}
+<script src='{% static "core/js/jquery.form.min.js" %}'></script>
+<script src='{% static "core/js/validator.min.js" %}'></script>
+<script src='{% static "datetimepicker/jquery.datetimepicker.js" %}'></script>
 <script language="javascript">
   $(document).ready(function() {
+    // Form hiding stuff
+    $('#detailsForm').hide();
+
+    $('#operationalFormNav').click(function() {
+      $('#operationalForm').show();
+      $('#detailsForm').hide();
+      if(!$('#operationalFormNav').hasClass('active')){
+        $('#operationalFormNav').addClass('active');
+        $('#detailFormNav').removeClass('active');
+      }
+    });
+
+    $('#detailFormNav').click(function() {
+      $('#operationalForm').hide();
+      $('#detailsForm').show();
+      if(!$('#detailFormNav').hasClass('active')){
+        $('#detailFormNav').addClass('active');
+        $('#operationalFormNav').removeClass('active');
+      }
+    });
+
+    // Datepicker stuff
+    $('#id_operational_date').datetimepicker({step:30, timepicker:false});
+    $('#id_construction_date').datetimepicker({step:30, timepicker:false});
+
+    // Developer form stuff
+    add_developer = $('#id_developer').parent();
+    $('.form-sign-in .col-md-9').removeClass('col-md-9').addClass('col-md-5');
+    var add_developer_text = '<div class="col-md-4" style="padding-top: 7px">Developer not in the list? <a data-toggle="modal" data-target="#developerModal" class="" href="#" role="button">Add a developer</a></div>';
+    add_developer.parent().append(add_developer_text);
+
+    $('#developerForm label.col-md-3').addClass('col-md-2').removeClass('col-md-3');
+
+    // Ajax the form
+    var options = {
+        dataType: 'json',
+        success: function(data) {
+            // Change the header
+            $('h4#myModalLabel').html('Data successfully uploaded');
+            $('#id_developer').append($('<option>', {
+                value: data.pk,
+                text: data.name,
+                selected: "selected"
+            }));
+            $('#developerModal').modal('hide');
+        }
+    }
+    $('#developerForm').ajaxForm(options);
   })
 </script>
 {% endblock %}
