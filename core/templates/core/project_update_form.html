@@ -20,7 +20,7 @@
 {% block header-text %}Edit project details{% endblock header-text %}
 
 {% block content %}
-<div class="row"><div class="col-md-9 col-md-offset-3">
+<div class="row"><div class="col-md-10 col-md-offset-2">
 <ul class="nav nav-pills">
   <li role="presentation" class="active" id="operationalFormNav"><a href="#">Operational info</a></li>
   <li role="presentation" id="detailFormNav"><a href="#">Project details</a></li>
@@ -67,7 +67,36 @@
 <script src='{% static "core/js/validator.min.js" %}'></script>
 <script src='{% static "datetimepicker/jquery.datetimepicker.js" %}'></script>
 <script language="javascript">
+  /*var map;
+  window.addEventListener("load", function (e) {
+  })
+  window.addEventListener("map:init", function (e) {
+      map = e.detail.map;
+      document.getElementById('detailsForm').style.display = 'none';
+  }, false);
+
+  window.addEventListener("map:init", function (e) {
+      map = e.detail.map;
+      document.getElementById('detailsForm').style.display = 'none';
+  }, false);
+
+  window.addEventListener("map_init_basic", function (e) {
+      console.log('wtf');
+  }, false);
+
+  function map_init_basic(map, options) {
+    alert('hidf');
+  }*/
+
   $(document).ready(function() {
+    var map;
+    $(window).on('map:init', function(e) {
+      map = e.originalEvent.detail.map;
+      //console.log(e.originalEvent.detail.map);
+      //map = e.detail.map;
+      //console.log('fsdah');
+    });
+
     // Form hiding stuff
     $('#detailsForm').hide();
 
@@ -87,6 +116,23 @@
         $('#detailFormNav').addClass('active');
         $('#operationalFormNav').removeClass('active');
       }
+
+      // Necessary to get the map displaying correctly https://github.com/Leaflet/Leaflet/issues/159
+      // maybe http://stackoverflow.com/questions/24547468/leaflet-map-on-hide-div
+      map.invalidateSize()
+      console.log(map._layers.getBounds());/*
+      map.eachLayer(function (layer) {
+        console.log('layer');
+        console.log(layer.toGeoJSON());
+        console.log('endlayer');
+        mybounds = L.featureGroup();
+        mybounds.addLayer(layer);
+        //console.log('mybounds');
+        //console.log(mybounds);
+        //console.log('endmybounds');
+        //map.fitBounds(mybounds.getBounds());
+        console.log(layer);
+      });*/
     });
 
     // Datepicker stuff
@@ -95,11 +141,8 @@
 
     // Developer form stuff
     add_developer = $('#id_developer').parent();
-    $('.form-sign-in .col-md-9').removeClass('col-md-9').addClass('col-md-5');
     var add_developer_text = '<div class="col-md-4" style="padding-top: 7px">Developer not in the list? <a data-toggle="modal" data-target="#developerModal" class="" href="#" role="button">Add a developer</a></div>';
     add_developer.parent().append(add_developer_text);
-
-    $('#developerForm label.col-md-3').addClass('col-md-2').removeClass('col-md-3');
 
     // Ajax the form
     var options = {

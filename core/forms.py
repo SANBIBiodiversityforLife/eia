@@ -73,7 +73,9 @@ class ProjectUpdateForm(forms.ModelForm):
         model = Project
         fields = ('operational_date', 'construction_date', 'turbine_locations', 'turbine_make', 'turbine_capacity',
                   'turbine_height', 'name', 'location', 'developer', 'eia_number', 'energy_type')
-        widgets = {'location': LeafletWidget(), 'turbine_locations': LeafletWidget()}
+        widgets = {'location': LeafletWidget(attrs={
+            'callback': 'window.map_init_basic'
+        }), 'turbine_locations': LeafletWidget()}
 
 
 class ProjectDeleteForm(forms.ModelForm):

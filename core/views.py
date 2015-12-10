@@ -205,8 +205,16 @@ class ProjectUpdate(UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super(ProjectUpdate, self).get_context_data(**kwargs)
+
+        # Developer form
         if 'developer_form' not in context:
             context['developer_form'] = forms.DeveloperCreateForm()
+
+        # We need to send the turbine points or if no turbine the project points to manually synchronise the map bounds in the view
+
+        project = models.Project.objects.filter(pk=self.object.pk)
+        geojson = serialize('geojson', project)
+        context['project_geojson'] = geojson
         return context
 
 class ProjectDelete(DeleteView):

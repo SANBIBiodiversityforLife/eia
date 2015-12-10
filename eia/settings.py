@@ -172,3 +172,11 @@ LEAFLET_CONFIG = {
     'DEFAULT_CENTER': (-29, 24.5),
     'DEFAULT_ZOOM': 5,
 }
+
+# Django-bootstrap 3 settings
+BOOTSTRAP3 = {
+    # Label class to use in horizontal forms
+    'horizontal_label_class': 'col-md-2',
+    # Field class to use in horizontal forms
+    'horizontal_field_class': 'col-md-5'
+}

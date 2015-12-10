@@ -35,7 +35,7 @@
       </div>
       <form role="form" class="form-horizontal" action="{% url 'developer_create' %}" method="post" id="developerForm">{% csrf_token %}
         <div class="modal-body">
-          {% bootstrap_form developer_form layout='horizontal' %}
+          {% bootstrap_form developer_form layout='horizontal' horizontal_label_class='col-md-3' horizontal_field_class='col-md-8' %}
         </div>
         <div class="modal-footer">
           {% buttons submit='Save' layout='horizontal' %}
@@ -52,20 +52,11 @@
 <script src='{% static "core/js/jquery.form.min.js" %}'></script>
 <script src='{% static "core/js/validator.min.js" %}'></script>
 <script language="javascript">
-/*function main_map_init(map, options) {
-    var southWest = new L.LatLng(-35.153957, 17.919771);
-    northEast = new L.LatLng(-21.203043, 33.320086);
-    bounds = new L.LatLngBounds(southWest, northEast);
-    map.fitBounds(bounds, {padding: []});
-    }*/
   $(document).ready(function() {
+    // A bit hacky, but we have to add the 'add x buttons' in separately
     add_developer = $('#id_developer').parent();
-    //add_developer.removeClass('col-md-9').addClass('col-md-5');
-    $('.form-sign-in .col-md-9').removeClass('col-md-9').addClass('col-md-5');
     var add_developer_text = '<div class="col-md-4" style="padding-top: 7px">Developer not in the list? <a data-toggle="modal" data-target="#developerModal" class="" href="#" role="button">Add a developer</a></div>';
     add_developer.parent().append(add_developer_text);
-
-    $('#developerForm label.col-md-3').addClass('col-md-2').removeClass('col-md-3');
 
     // Ajax the form
     var options = {
@@ -82,19 +73,6 @@
         }
     }
     $('#developerForm').ajaxForm(options);
-
-
-
-
-    /*add_developer = $('#id_developer').parent();
-    add_developer.wrapInner('<div class="input-group"></div>');
-
-    var addon = '<div class="input-group-btn">';
-    addon += '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-question-sign glyphicon-align-left" aria-hidden="true"></span> Developer not in the list? <span class="caret"></span></button>';
-    addon += '<ul class="dropdown-menu dropdown-menu-right">';
-    addon += '<li><a href="">Add a developer</a></li></ul></div><!-- /input-group-btn -->';
-    add_developer.children('.input-group').append(addon);*/
-
   })
 </script>
 {% endblock %}
