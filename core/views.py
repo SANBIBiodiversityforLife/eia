@@ -215,6 +215,9 @@ class ProjectUpdate(UpdateView):
         project = models.Project.objects.filter(pk=self.object.pk)
         geojson = serialize('geojson', project)
         context['project_geojson'] = geojson
+        context['project'] = project
+        import pdb; pdb.set_trace()
+        context['project_pk'] = project.pk
         return context
 
 class ProjectDelete(DeleteView):

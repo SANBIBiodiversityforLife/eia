@@ -13,6 +13,7 @@
 <ol class="breadcrumb">
   <li><a href="#">Home</a></li>
   <li><a href="{% url 'projects_list' %}">Projects</a></li>
+  <li><a href="{% url 'project_detail' project_pk %}">Project</a></li>
   <li class="active">Edit project details</li>
 </ol>
 {% endblock breadcrumb %}
@@ -67,34 +68,27 @@
 <script src='{% static "core/js/validator.min.js" %}'></script>
 <script src='{% static "datetimepicker/jquery.datetimepicker.js" %}'></script>
 <script language="javascript">
-  /*var map;
-  window.addEventListener("load", function (e) {
-  })
-  window.addEventListener("map:init", function (e) {
-      map = e.detail.map;
-      document.getElementById('detailsForm').style.display = 'none';
-  }, false);
-
-  window.addEventListener("map:init", function (e) {
-      map = e.detail.map;
-      document.getElementById('detailsForm').style.display = 'none';
-  }, false);
-
-  window.addEventListener("map_init_basic", function (e) {
-      console.log('wtf');
-  }, false);
-
-  function map_init_basic(map, options) {
-    alert('hidf');
-  }*/
-
   $(document).ready(function() {
-    var map;
+    // Store references to the maps for later use
+    var project_map;
+    var project_bounds = new L.LatLngBounds();
+    var turbine_map;
+    map_counter = 0;
     $(window).on('map:init', function(e) {
-      map = e.originalEvent.detail.map;
-      //console.log(e.originalEvent.detail.map);
-      //map = e.detail.map;
-      //console.log('fsdah');
+      // TODO come up with a better way of telling which map is which than order
+      if(map_counter == 0) {
+        turbine_map = e.originalEvent.detail.map;
+        map_counter++;
+      }
+      else {
+        project_map = e.originalEvent.detail.map;
+
+
+       // TODO Work out a better way of getting the project layer... this is ridiculous
+
+        // Once the turbine map has loaded (it loads second), we need to add a project polygon layer to it
+        //turbine_map
+      }
     });
 
     // Form hiding stuff
@@ -109,6 +103,10 @@
       }
     });
 
+    // Keep track of if the details section of the form has been clicked so we don't do extra stuff we don't need to
+    details_unhidden = 0;
+
+    // All of the detail form stuff
     $('#detailFormNav').click(function() {
       $('#operationalForm').hide();
       $('#detailsForm').show();
@@ -117,22 +115,31 @@
         $('#operationalFormNav').removeClass('active');
       }
 
-      // Necessary to get the map displaying correctly https://github.com/Leaflet/Leaflet/issues/159
-      // maybe http://stackoverflow.com/questions/24547468/leaflet-map-on-hide-div
-      map.invalidateSize()
-      console.log(map._layers.getBounds());/*
-      map.eachLayer(function (layer) {
-        console.log('layer');
-        console.log(layer.toGeoJSON());
-        console.log('endlayer');
-        mybounds = L.featureGroup();
-        mybounds.addLayer(layer);
-        //console.log('mybounds');
-        //console.log(mybounds);
-        //console.log('endmybounds');
-        //map.fitBounds(mybounds.getBounds());
-        console.log(layer);
-      });*/
+      // The first time the detailsForm is shown we need to do some corrections to the map
+      if(details_unhidden == 0) {
+        // Sanity
+        console.log('Showing the project details map for the first time');
+
+        // Necessary to get the hidden map displaying correctly https://github.com/Leaflet/Leaflet/issues/159
+        // maybe http://stackoverflow.com/questions/24547468/leaflet-map-on-hide-div
+        project_map.invalidateSize()
+
+        // Get the project bounds
+        project_bounds = new L.LatLngBounds();
+        project_map.eachLayer(function (layer) {
+          if(layer._latlngs) {
+            $.each(layer._latlngs, function(index, value) {
+              project_bounds.extend(value);
+            });
+          }
+        });
+
+        // Fit the project map to the bounds
+        project_map.fitBounds(project_bounds.pad(0.5));
+
+        // Register that the map stuff has been done so we don't do it again unnecessarily
+        details_unhidden = 1;
+      }
     });
 
     // Datepicker stuff
