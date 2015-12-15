@@ -87,3 +87,4 @@ footer {
     margin-top: 40px;
 }
 #projectsMap .leaflet-container-default {min-height: 500px;}
+form#projectUpdate { margin-top: 20px; }

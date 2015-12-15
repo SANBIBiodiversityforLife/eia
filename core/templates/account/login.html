@@ -20,27 +20,23 @@
 
 {% block content %}
 {% get_providers as socialaccount_providers %}
-<div class="row">
-  <div class="col-xs-12 col-md-9">
-    {% if socialaccount_providers %}
-      <div class="social-accounts">
-        {% include "socialaccount/snippets/provider_list.html" with process="login" %}
-      </div>
-      <hr>
-      <h3><i class="fa fa-lightbulb-o"></i> If you have a SANBI EIA database account sign in below. <small>Or <a href="{{ signup_url }}">sign up for an account</a>.</small></h3>
-      {% include "socialaccount/snippets/login_extra.html" %}
-    {% endif %}
-
-    <form role="form" class="form-horizontal form-sign-in" method="POST" action="{% url 'account_login' %}">{% csrf_token %}
-      {% bootstrap_form form layout='horizontal' %}
-      {% if redirect_field_value %}
-      <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
-      {% endif %}
-      {% buttons submit='Sign in' layout='horizontal' %}
-      <a href="{% url 'account_reset_password' %}">Forgot Password?</a>
-      <a class="btn btn-default pull-right" href="{{ signup_url }}" role="button">Sign up for an account</a>
-      {% endbuttons %}
-    </form>
+{% if socialaccount_providers %}
+  <div class="social-accounts">
+    {% include "socialaccount/snippets/provider_list.html" with process="login" %}
   </div>
-</div>
+  <hr>
+  <h3><i class="fa fa-lightbulb-o"></i> If you have a SANBI EIA database account sign in below. <small>Or <a href="{{ signup_url }}">sign up for an account</a>.</small></h3>
+  {% include "socialaccount/snippets/login_extra.html" %}
+{% endif %}
+
+<form role="form" class="form-horizontal form-sign-in" method="POST" action="{% url 'account_login' %}">{% csrf_token %}
+  {% bootstrap_form form layout='horizontal' %}
+  {% if redirect_field_value %}
+  <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+  {% endif %}
+  {% buttons submit='Sign in' layout='horizontal' %}
+  <a href="{% url 'account_reset_password' %}">Forgot Password?</a>
+  <a class="btn btn-default pull-right" href="{{ signup_url }}" role="button">Sign up for an account</a>
+  {% endbuttons %}
+</form>
 {% endblock content %}

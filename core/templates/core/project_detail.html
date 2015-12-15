@@ -39,9 +39,44 @@
 <script type="text/javascript">
 function main_map_init(map, options) {
     // See http://blog.mathieu-leplatre.info/geodjango-maps-with-leaflet.html
-    var group = new L.geoJson({% autoescape off %}{{ geojson }}{% endautoescape %});
-    L.geoJson({% autoescape off %}{{ geojson }}{% endautoescape %}).addTo(map);
-    map.fitBounds(group.getBounds().pad(0.5));
+    //console.log({{ turbine_locations|safe }})
+    // Add the project polygon
+    var project_polygon = new L.geoJson({% autoescape off %}{{ project_location }}{% endautoescape %});
+    project_polygon.addTo(map);
+
+    // Fit the map bounds to the project polygon
+    map.fitBounds(project_polygon.getBounds());
+
+    // Add the turbine points (if there are any)
+    {% if turbine_locations %}
+    var turbineIcon = new L.icon({
+        iconUrl: '/static/core/img/icons/turbine-icon.png',
+        shadowUrl: '/static/core/img/icons/turbine-shadow.png',
+
+        iconSize:     [48, 63], // size of the icon
+        shadowSize:   [48.4, 60], // size of the shadow
+        iconAnchor:   [24.2, 60], // point of the icon which will correspond to marker's location
+        shadowAnchor: [24.2, 60],  // the same for the shadow
+        popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
+    });
+    var myStyle = {
+        "color": "#ff7800",
+        "weight": 5,
+        "opacity": 0.65
+    };
+
+    var turbine_points = new L.geoJson({% autoescape off %}{{ turbine_locations }}{% endautoescape %}, {
+      style: myStyle,
+      pointToLayer: function(feature, latlng) {
+          return L.marker(latlng, {icon: turbineIcon});
+      },
+    })
+    turbine_points.addTo(map);
+    {% endif %}
+
+    // Add the solar... polygons?
+
+    // Data points?
 }
 </script>
 {% endblock js %}

@@ -13,8 +13,8 @@
 <ol class="breadcrumb">
   <li><a href="#">Home</a></li>
   <li><a href="{% url 'projects_list' %}">Projects</a></li>
-  <li><a href="{% url 'project_detail' project_pk %}">Project</a></li>
-  <li class="active">Edit project details</li>
+  <li><a href="{% url 'project_detail' project.pk %}">{{ project.name }}</a></li>
+  <li class="active">Edit project</li>
 </ol>
 {% endblock breadcrumb %}
 
@@ -23,30 +23,24 @@
 {% block content %}
 <div class="row"><div class="col-md-10 col-md-offset-2">
 <ul class="nav nav-pills">
-  <li role="presentation" class="active" id="operationalFormNav"><a href="#">Operational info</a></li>
-  <li role="presentation" id="detailFormNav"><a href="#">Project details</a></li>
+  <li role="presentation" id="operationalFormNav"><a href="{% url 'project_update_operational_info' project.pk %}">Operational info</a></li>
+  <li role="presentation" class="active" id="detailFormNav"><a href="{% url 'project_update' project.pk %}">Project details</a></li>
 </ul></div></div>
-<form role="form" class="form-horizontal form-sign-in" action="" method="post">{% csrf_token %}
-  <!--{% bootstrap_form form layout='horizontal' %}-->
+
+<form role="form" class="form-horizontal" action="" method="post" id="projectUpdate">{% csrf_token %}
   <div id="operationalForm">
-  {% for field in form %}
-    {% if field.name == "name" %}
-    </div>
-    <div id="detailsForm">
-    {% endif %}
-    {% bootstrap_field field layout='horizontal' %}
-  {% endfor %}
-    </div>
-  {% buttons submit='Create' layout='horizontal' %}{% endbuttons %}
+  {% bootstrap_form form layout='horizontal' %}
+  </div>
+  {% buttons submit='Save' layout='horizontal' %}<a href="{% url 'project_detail' project.pk %}" type="button" class="btn btn-danger pull-right">Cancel</a>{% endbuttons %}
 </form>
 
 <!-- Modal -->
-<div class="modal fade" id="developerModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+<div class="modal fade" id="developerModal" tabindex="-1" role="dialog" aria-labelledby="developerModalLabel">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="myModalLabel">Add a developer</h4>
+        <h4 class="modal-title" id="developerModalLabel">Add a developer</h4>
       </div>
       <form role="form" class="form-horizontal" action="{% url 'developer_create' %}" method="post" id="developerForm">{% csrf_token %}
         <div class="modal-body">
@@ -69,82 +63,9 @@
 <script src='{% static "datetimepicker/jquery.datetimepicker.js" %}'></script>
 <script language="javascript">
   $(document).ready(function() {
-    // Store references to the maps for later use
-    var project_map;
-    var project_bounds = new L.LatLngBounds();
-    var turbine_map;
-    map_counter = 0;
-    $(window).on('map:init', function(e) {
-      // TODO come up with a better way of telling which map is which than order
-      if(map_counter == 0) {
-        turbine_map = e.originalEvent.detail.map;
-        map_counter++;
-      }
-      else {
-        project_map = e.originalEvent.detail.map;
-
-
-       // TODO Work out a better way of getting the project layer... this is ridiculous
-
-        // Once the turbine map has loaded (it loads second), we need to add a project polygon layer to it
-        //turbine_map
-      }
-    });
-
-    // Form hiding stuff
-    $('#detailsForm').hide();
-
-    $('#operationalFormNav').click(function() {
-      $('#operationalForm').show();
-      $('#detailsForm').hide();
-      if(!$('#operationalFormNav').hasClass('active')){
-        $('#operationalFormNav').addClass('active');
-        $('#detailFormNav').removeClass('active');
-      }
-    });
-
-    // Keep track of if the details section of the form has been clicked so we don't do extra stuff we don't need to
-    details_unhidden = 0;
-
-    // All of the detail form stuff
-    $('#detailFormNav').click(function() {
-      $('#operationalForm').hide();
-      $('#detailsForm').show();
-      if(!$('#detailFormNav').hasClass('active')){
-        $('#detailFormNav').addClass('active');
-        $('#operationalFormNav').removeClass('active');
-      }
-
-      // The first time the detailsForm is shown we need to do some corrections to the map
-      if(details_unhidden == 0) {
-        // Sanity
-        console.log('Showing the project details map for the first time');
-
-        // Necessary to get the hidden map displaying correctly https://github.com/Leaflet/Leaflet/issues/159
-        // maybe http://stackoverflow.com/questions/24547468/leaflet-map-on-hide-div
-        project_map.invalidateSize()
-
-        // Get the project bounds
-        project_bounds = new L.LatLngBounds();
-        project_map.eachLayer(function (layer) {
-          if(layer._latlngs) {
-            $.each(layer._latlngs, function(index, value) {
-              project_bounds.extend(value);
-            });
-          }
-        });
-
-        // Fit the project map to the bounds
-        project_map.fitBounds(project_bounds.pad(0.5));
-
-        // Register that the map stuff has been done so we don't do it again unnecessarily
-        details_unhidden = 1;
-      }
-    });
-
     // Datepicker stuff
-    $('#id_operational_date').datetimepicker({step:30, timepicker:false});
-    $('#id_construction_date').datetimepicker({step:30, timepicker:false});
+    $('#id_operational_date').datetimepicker({ timepicker:false, format:'d/m/Y' });
+    $('#id_construction_date').datetimepicker({ timepicker:false, format:'d/m/Y' });
 
     // Developer form stuff
     add_developer = $('#id_developer').parent();
@@ -156,7 +77,7 @@
         dataType: 'json',
         success: function(data) {
             // Change the header
-            $('h4#myModalLabel').html('Data successfully uploaded');
+            $('h4#developerModalLabel').html('Data successfully uploaded');
             $('#id_developer').append($('<option>', {
                 value: data.pk,
                 text: data.name,

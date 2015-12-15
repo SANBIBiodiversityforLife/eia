@@ -40,10 +40,13 @@ class Developer(models.Model):
 
 class TurbineMake(models.Model):
     """Normalising the turbine make to avoid typos and to make it easier to search by turbine make."""
-    make = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
-        return self.make
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse('projects_list')
 
 
 class Project(models.Model):
@@ -72,13 +75,16 @@ class Project(models.Model):
     # Operation details
     operational_date = models.DateField(null=True, blank=True)
     construction_date = models.DateField(null=True, blank=True)
+
+    # Turbine details
     turbine_locations = models.MultiPointField(null=True, blank=True)
+    #turbine_locations = models.MultiPolygonField(null=True, blank=True)
     turbine_make = models.ForeignKey(TurbineMake, null=True, blank=True)
     turbine_capacity = models.IntegerField(null=True, blank=True)
     turbine_height = models.IntegerField(null=True, blank=True)
 
     def get_absolute_url(self):
-        return reverse('project_update', kwargs={'pk': self.pk})
+        return reverse('project_update_operational_info', kwargs={'pk': self.pk})
 
     def __str__(self):
         return self.name
@@ -86,6 +92,9 @@ class Project(models.Model):
     # Add a popup for the maps, see http://fle.github.io/easy-webmapping-with-django-leaflet-and-django-geojson.html
     def popup_content(self):
         return self.name + ' ' + self.developer
+
+    #def clean(self):
+    #    import pdb; pdb.set_trace()
 
 
 class PreviousProjectNames(models.Model):

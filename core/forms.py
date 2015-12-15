@@ -3,7 +3,7 @@ from django import forms
 from django.db import models
 #from django.core.exceptions import DoesNotExist
 from leaflet.forms.widgets import LeafletWidget
-from core.models import Project, PopulationData, Taxa, TaxaOrder, FocalSite, FocalSiteData, MetaData, Profile, Developer
+from core.models import Project, PopulationData, Taxa, TaxaOrder, FocalSite, FocalSiteData, MetaData, Profile, Developer, TurbineMake
 from core import validators
 from openpyxl import load_workbook
 #from django.contrib.staticfiles.templatetags.staticfiles import static
@@ -55,6 +55,12 @@ class DeveloperCreateForm(forms.ModelForm):
         fields = ('name', 'email', 'phone')
 
 
+class TurbineMakeCreateForm(forms.ModelForm):
+    class Meta:
+        model = TurbineMake
+        fields = ('name',)
+
+
 class FocalSiteCreateForm(forms.ModelForm):
     class Meta:
         model = FocalSite
@@ -68,14 +74,27 @@ class FocalSiteDataCreateForm(forms.ModelForm):
         fields = ('taxa', 'focal_site', 'count')
 
 
-class ProjectUpdateForm(forms.ModelForm):
+class ProjectUpdateOperationalInfoForm(forms.ModelForm):
     class Meta:
         model = Project
         fields = ('operational_date', 'construction_date', 'turbine_locations', 'turbine_make', 'turbine_capacity',
-                  'turbine_height', 'name', 'location', 'developer', 'eia_number', 'energy_type')
-        widgets = {'location': LeafletWidget(attrs={
-            'callback': 'window.map_init_basic'
-        }), 'turbine_locations': LeafletWidget()}
+                  'turbine_height')
+        widgets = {'turbine_locations': LeafletWidget()}
+        help_texts = {
+            'operational_date': 'The date the project first became operational',
+            'construction_date': 'The date construction began on the project',
+            'turbine_locations': 'The locations of the turbines',
+            'turbine_make': 'The make of the turbines',
+            'turbine_capacity': 'The capacity of the turbines',
+            'turbine_height': 'The height of the turbines',
+        }
+
+
+class ProjectUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ('name', 'location', 'developer', 'eia_number', 'energy_type')
+        widgets = {'location': LeafletWidget()}
 
 
 class ProjectDeleteForm(forms.ModelForm):

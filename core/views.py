@@ -178,11 +178,6 @@ def project_list(request):
     return render(request, 'core/project_list.html', {'projects': projects, 'filter': f})
 
 
-class ProjectDetail(DetailView):
-    model = models.Project
-    context_object_name = 'project'
-
-
 class ProjectCreate(CreateView):
     model = models.Project
     template_name_suffix = '_create_form'
@@ -210,14 +205,29 @@ class ProjectUpdate(UpdateView):
         if 'developer_form' not in context:
             context['developer_form'] = forms.DeveloperCreateForm()
 
-        # We need to send the turbine points or if no turbine the project points to manually synchronise the map bounds in the view
+        project = models.Project.objects.filter(pk=self.object.pk)
+        geojson = serialize('geojson', project)
+        context['project_geojson'] = geojson
+        context['project'] = project[0]
+        return context
+
+
+class ProjectUpdateOperationalInfo(UpdateView):
+    model = models.Project
+    template_name_suffix = '_update_operational_info_form'
+    form_class = forms.ProjectUpdateOperationalInfoForm
+
+    def get_context_data(self, **kwargs):
+        context = super(ProjectUpdateOperationalInfo, self).get_context_data(**kwargs)
+
+        # Turbine form
+        if 'turbine_form' not in context:
+            context['turbine_form'] = forms.TurbineMakeCreateForm()
 
         project = models.Project.objects.filter(pk=self.object.pk)
         geojson = serialize('geojson', project)
         context['project_geojson'] = geojson
-        context['project'] = project
-        import pdb; pdb.set_trace()
-        context['project_pk'] = project.pk
+        context['project'] = project[0]
         return context
 
 class ProjectDelete(DeleteView):
@@ -253,6 +263,35 @@ class DeveloperCreate(CreateView):
             return response
 
 
+class TurbineMakeCreate(CreateView):
+    model = models.TurbineMake
+    fields = ['name',]
+    template_name_suffix = '_create_form'
+
+    def form_invalid(self, form):
+        # TODO add validation to ensure that turbine points are within the project polygon
+
+        response = super(TurbineMakeCreate, self).form_invalid(form)
+        if self.request.is_ajax():
+            return JsonResponse(form.errors, status=400)
+        else:
+            return response
+
+    def form_valid(self, form):
+        # We make sure to call the parent's form_valid() method because
+        # it might do some processing (in the case of CreateView, it will
+        # call form.save() for example).
+        response = super(TurbineMakeCreate, self).form_valid(form)
+        if self.request.is_ajax():
+            data = {
+                'pk': self.object.pk,
+                'name': self.object.name,
+            }
+            return JsonResponse(data)
+        else:
+            return response
+
+
 class DeveloperDetail(DetailView):
     model = models.Developer
     context_object_name = 'developer'
@@ -271,11 +310,23 @@ class PopulationDataCreate(CreateView):
 
 @login_required
 def project_detail(request, pk):
+    # Retrieve the project
     project = models.Project.objects.filter(pk=pk)
-    geojson = serialize('geojson', project)
-    project = models.Project.objects.get(pk=pk)
+
+    # Get the project location geojson
+    project_location_geojson = serialize('geojson', project, geometry_field='location', fields=('location',))
+
+    # Get the turbine location geojson
+    turbine_locations_geojson = serialize('geojson',
+                                          project,
+                                          geometry_field='turbine_locations',
+                                          fields=('turbine_locations',))
+
+    project = project[0]
     return render_to_response('core/project_detail.html',
-                              {'geojson': geojson, 'project': project},
+                              {'project_location': project_location_geojson,
+                               'turbine_locations': turbine_locations_geojson,
+                               'project': project},
                               RequestContext(request))
 
 def projects_map(request):
