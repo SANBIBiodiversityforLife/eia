@@ -48,7 +48,7 @@ urlpatterns = [
     url(r'^developer/(?P<pk>[0-9]+)/$', login_required(views.DeveloperDetail.as_view()), name='developer_detail'),
 
     # Turbine
-    url(r'^turbine/create/$', login_required(views.TurbineMakeCreate.as_view()), name='turbine_create'),
+    url(r'^equipment/create/$', login_required(views.EquipmentMakeCreate.as_view()), name='equipment_make_create'),
 
     # Data related URLs
     url(r'^project/(?P<project_pk>[0-9]+)/data/', login_required(views.DataList.as_view()), name='data_list'),

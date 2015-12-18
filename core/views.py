@@ -107,7 +107,7 @@ class PopulationDataCreateView(FormView):#class PopulationDataCreateView(Ajaxabl
 
     def get_context_data(self, **kwargs):
         context = super(PopulationDataCreateView, self).get_context_data(**kwargs)
-        context['project_pk'] = self.kwargs['project_pk']
+        context['project'] = models.Project.objects.get(pk=self.kwargs['project_pk'])
         return context
 
 
@@ -153,31 +153,6 @@ class FocalSiteCreate(CreateView):
     form_class = forms.FocalSiteCreateForm
 
 
-import django_filters
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-
-class ProjectFilter(django_filters.FilterSet):
-    class Meta:
-        model = models.Project
-        fields = ['name', 'developer']
-
-def project_list(request):
-    f = ProjectFilter(request.GET, queryset=models.Project.objects.all())
-
-    paginator = Paginator(f.qs, 100) # Show 100 events per page
-    page = request.GET.get('page')
-    try:
-        projects = paginator.page(page)
-    except PageNotAnInteger:
-        # If page is not an integer, deliver first page.
-        projects = paginator.page(1)
-    except EmptyPage:
-        # If page is out of range (e.g. 9999), deliver last page of results.
-        projects = paginator.page(paginator.num_pages)
-
-    return render(request, 'core/project_list.html', {'projects': projects, 'filter': f})
-
-
 class ProjectCreate(CreateView):
     model = models.Project
     template_name_suffix = '_create_form'
@@ -190,6 +165,7 @@ class ProjectCreate(CreateView):
         if 'developer_form' not in context:
             context['developer_form'] = forms.DeveloperCreateForm()
         return context
+
 
 class ProjectUpdate(UpdateView):
     model = models.Project
@@ -220,9 +196,9 @@ class ProjectUpdateOperationalInfo(UpdateView):
     def get_context_data(self, **kwargs):
         context = super(ProjectUpdateOperationalInfo, self).get_context_data(**kwargs)
 
-        # Turbine form
-        if 'turbine_form' not in context:
-            context['turbine_form'] = forms.TurbineMakeCreateForm()
+        # Equipment form
+        if 'equipment_form' not in context:
+            context['equipment_form'] = forms.EquipmentMakeCreateForm()
 
         project = models.Project.objects.filter(pk=self.object.pk)
         geojson = serialize('geojson', project)
@@ -263,15 +239,15 @@ class DeveloperCreate(CreateView):
             return response
 
 
-class TurbineMakeCreate(CreateView):
-    model = models.TurbineMake
+class EquipmentMakeCreate(CreateView):
+    model = models.EquipmentMake
     fields = ['name',]
     template_name_suffix = '_create_form'
 
     def form_invalid(self, form):
         # TODO add validation to ensure that turbine points are within the project polygon
 
-        response = super(TurbineMakeCreate, self).form_invalid(form)
+        response = super(EquipmentMakeCreate, self).form_invalid(form)
         if self.request.is_ajax():
             return JsonResponse(form.errors, status=400)
         else:
@@ -281,7 +257,7 @@ class TurbineMakeCreate(CreateView):
         # We make sure to call the parent's form_valid() method because
         # it might do some processing (in the case of CreateView, it will
         # call form.save() for example).
-        response = super(TurbineMakeCreate, self).form_valid(form)
+        response = super(EquipmentMakeCreate, self).form_valid(form)
         if self.request.is_ajax():
             data = {
                 'pk': self.object.pk,
@@ -302,12 +278,6 @@ class DataList(ListView):
     context_object_name = 'projects'
 
 
-class PopulationDataCreate(CreateView):
-    model = models.PopulationData
-    template_name_suffix = '_create_form'
-    form_class = forms.PopulationDataCreateForm
-
-
 @login_required
 def project_detail(request, pk):
     # Retrieve the project
@@ -322,16 +292,51 @@ def project_detail(request, pk):
                                           geometry_field='turbine_locations',
                                           fields=('turbine_locations',))
 
+    # Project is a queryset (from filter), as this is what geojson requires, now return the actual object
     project = project[0]
+
+    # Get pre & post construction population data
+    population_data = models.PopulationData.objects.filter(metadata__project__pk=pk)
+
+    # Render the context
     return render_to_response('core/project_detail.html',
                               {'project_location': project_location_geojson,
                                'turbine_locations': turbine_locations_geojson,
+                               'population_data': population_data,
                                'project': project},
                               RequestContext(request))
 
+import django_filters
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+
+class ProjectFilter(django_filters.FilterSet):
+    class Meta:
+        model = models.Project
+        fields = ['name', 'developer']
+
+
+def project_list(request):
+    f = ProjectFilter(request.GET, queryset=models.Project.objects.all())
+
+    paginator = Paginator(f.qs, 100)  # Show 100 events per page
+    page = request.GET.get('page')
+    try:
+        projects = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        projects = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        projects = paginator.page(paginator.num_pages)
+
+    return render(request, 'core/project_list.html', {'projects': projects, 'filter': f})
+
+
 def projects_map(request):
-    projects = models.Project.objects.all()[:1000]
-    geojsons = serialize('geojson', projects)
-    return render_to_response('core/projects_map.html',
-                              {'geojson': geojsons},
-                              RequestContext(request))
+    q = models.Project.objects.all().select_related('developer')
+    f = ProjectFilter(request.GET, queryset=q)
+    print(q[0].developer)
+    #projects = models.Project.objects.all()[:1000]
+    geojsons = serialize('geojson', f)
+    return render(request, 'core/projects_map.html', {'geojson': geojsons, 'filter': f})

@@ -9,21 +9,28 @@
 {% endblock breadcrumb %}
 
 {% block header-text %}
-Projects
-<a href="{% url 'projects_map' %}" role="button" class="btn btn-success btn-lg">
-  <span class="glyphicon glyphicon-picture" aria-hidden="true"></span> Map view
-</a>
-<a href="{% url 'project_create' %}" role="button" class="btn btn-info pull-right">
-  <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add a new project
-</a>
-{% endblock header-text %}
+Projects{% endblock header-text %}
 
 {% block content %}
-
+<ul class="nav nav-pills">
+  <li role="presentation" class="active"><a href="{% url 'projects_list' %}">
+    <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span> List</a>
+  </li>
+  <li role="presentation">
+    <a href="{% url 'projects_map' %}"><span class="glyphicon glyphicon-picture" aria-hidden="true"></span> Map</a>
+  </li>
+</ul>
 
 <form role="form" class="form-inline" action="" method="get">
-    Search by name or developer: {% bootstrap_form filter.form layout='inline'  %}
-    <input type="submit" />
+  <strong>Search by: </strong>
+  {% for field in filter.form %}
+    {% bootstrap_label field.label %}   {% bootstrap_field field layout='inline'  %}
+  {% endfor %}
+  {% buttons %}
+      <button type="submit" class="btn btn-success">
+          {% bootstrap_icon "search" %} Search
+      </button>
+  {% endbuttons %}
 </form>
 <hr>
 <table class="table table-striped">

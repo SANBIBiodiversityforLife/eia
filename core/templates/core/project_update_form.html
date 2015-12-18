@@ -23,8 +23,8 @@
 {% block content %}
 <div class="row"><div class="col-md-10 col-md-offset-2">
 <ul class="nav nav-pills">
-  <li role="presentation" id="operationalFormNav"><a href="{% url 'project_update_operational_info' project.pk %}">Operational info</a></li>
-  <li role="presentation" class="active" id="detailFormNav"><a href="{% url 'project_update' project.pk %}">Project details</a></li>
+  <li role="presentation"><a href="{% url 'project_update_operational_info' project.pk %}">Operational info</a></li>
+  <li role="presentation" class="active"><a href="{% url 'project_update' project.pk %}">Project details</a></li>
 </ul></div></div>
 
 <form role="form" class="form-horizontal" action="" method="post" id="projectUpdate">{% csrf_token %}

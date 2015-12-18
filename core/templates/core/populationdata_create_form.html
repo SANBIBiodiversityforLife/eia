@@ -7,12 +7,10 @@
 {% endblock css %}
 
 {% block breadcrumb %}
-<!--<a href="{% url 'project_detail' pk=project_pk %}" role="button" class="btn btn-default"><span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span> Return to the project</a>-->
-
 <ol class="breadcrumb">
   <li><a href="#">Home</a></li>
   <li><a href="{% url 'projects_list' %}">Projects</a></li>
-  <li><a href="{% url 'project_detail' pk=project_pk %}">Current project</a></li>
+  <li><a href="{% url 'project_detail' pk=project.id %}">{{ project.name }}</a></li>
   <li class="active">Upload population data</li>
 </ol>
 {% endblock breadcrumb %}
@@ -43,15 +41,23 @@
               <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
               <strong><span class="sr-only">Error:</span> Oops! There were errors in your spreadsheet.</strong><hr>
               <a id="spreadsheet-errors" href="" role="button" class="btn btn-danger"><span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-                  Download the spreadsheet with highlighted errors</a> and <a href="{% url 'population_data_create' project_pk=project_pk %}">try again</a>.
+                  Download the spreadsheet with highlighted errors</a> and <a href="{% url 'population_data_create' project_pk=project.id %}">try again</a>.
               <p><strong>REMEMBER</strong> to click on the yellow button to enable editing!</p>
+          </div>
+      </div>
+      <div class="modal-body" id="modalMessageServerFailure">
+          <div class="alert alert-danger" role="alert">
+              <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+              <strong><span class="sr-only">Error:</span> Oops! There was a technical error.</strong><hr>
+              <p>Please <a href="{% url 'population_data_create' project_pk=project.id %}">try again</a>.</p>
+              <p>If this error keeps occurring, please contact one of the technical staff with the following message: <div id="serverErrorMessage"></div></p>
           </div>
       </div>
       <div class="modal-body" id="modalMessageSuccess">
           <div class="alert alert-success" role="alert">
               <span class="glyphicon glyphicon-thumbs-up" aria-hidden="true"></span> <strong>Thank you.</strong><hr>
               <p>Your data has been successfully uploaded.</p>
-              <p><a href="{% url 'project_detail' pk=project_pk %}" role="button" class="btn btn-success"><span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span> Return to the project page</a></p>
+              <p><a href="{% url 'project_detail' pk=project.id %}" role="button" class="btn btn-success"><span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span> Return to the project page</a></p>
           </div>
       </div>
       <div class="modal-footer">
@@ -147,6 +153,7 @@
     // Hide the success/failure messages in the modal window, only show it when everything is ok
     $('#modalMessageSuccess').hide();
     $('#modalMessageFailure').hide();
+    $('#modalMessageServerFailure').hide();
 
     // Ajax the form
     var options = {
@@ -165,6 +172,12 @@
             } else {
                 $('#modalMessageSuccess').fadeIn();
             }
+        },
+        error: function(jqXHR jqXHR, String textStatus, String errorThrown){
+            // Make the message appear to fade in
+            $('#modalMessage').hide();
+            $('#serverErrorMessage').text(errorThrown);
+            $('#modalMessageServerFailure').fadeIn();
         }
     }
     $('#upload-form').ajaxForm(options);

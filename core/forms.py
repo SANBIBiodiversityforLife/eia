@@ -3,7 +3,7 @@ from django import forms
 from django.db import models
 #from django.core.exceptions import DoesNotExist
 from leaflet.forms.widgets import LeafletWidget
-from core.models import Project, PopulationData, Taxa, TaxaOrder, FocalSite, FocalSiteData, MetaData, Profile, Developer, TurbineMake
+from core.models import Project, PopulationData, Taxa, TaxaOrder, FocalSite, FocalSiteData, MetaData, Profile, Developer, EquipmentMake
 from core import validators
 from openpyxl import load_workbook
 #from django.contrib.staticfiles.templatetags.staticfiles import static
@@ -55,9 +55,9 @@ class DeveloperCreateForm(forms.ModelForm):
         fields = ('name', 'email', 'phone')
 
 
-class TurbineMakeCreateForm(forms.ModelForm):
+class EquipmentMakeCreateForm(forms.ModelForm):
     class Meta:
-        model = TurbineMake
+        model = EquipmentMake
         fields = ('name',)
 
 
@@ -77,16 +77,16 @@ class FocalSiteDataCreateForm(forms.ModelForm):
 class ProjectUpdateOperationalInfoForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ('operational_date', 'construction_date', 'turbine_locations', 'turbine_make', 'turbine_capacity',
-                  'turbine_height')
+        fields = ('operational_date', 'construction_date', 'turbine_locations', 'equipment_make', 'equipment_capacity',
+                  'equipment_height')
         widgets = {'turbine_locations': LeafletWidget()}
         help_texts = {
             'operational_date': 'The date the project first became operational',
             'construction_date': 'The date construction began on the project',
             'turbine_locations': 'The locations of the turbines',
-            'turbine_make': 'The make of the turbines',
-            'turbine_capacity': 'The capacity of the turbines',
-            'turbine_height': 'The height of the turbines',
+            'equipment_make': 'The make of the turbines/solar panels',
+            'equipment_capacity': 'The capacity of the turbines/solar panels',
+            'equipment_height': 'The height of the turbines/solar panels',
         }
 
 
@@ -154,10 +154,14 @@ class MetaDataCreateForm(forms.ModelForm):
         # Get the correct sheet - TODO how are we going to stop them from renaming the sheet?
         main_sheet = uploaded_data.get_sheet_by_name("Main")
         print('Retrieved worksheet...')
+
         # Create the metadata object and store it to get its primary key
         # This must get deleted after this function if no actual data is stored
+        print("adding project to instance...")
         self.instance.project = Project.objects.get(pk=project_pk)
+        print("saving project")
         self.instance.save()
+        print("project saved")
         metadata = self.instance
 
         # Keep track of the errors somehow
@@ -168,6 +172,8 @@ class MetaDataCreateForm(forms.ModelForm):
 
         # Loop through the rows in the sheet
         for row in main_sheet.iter_rows(row_offset=1):
+            print('Looping through main sheet')
+
             # Gather the data into sensible variable names
             genus = row[0].value
             species = row[1].value
@@ -179,8 +185,6 @@ class MetaDataCreateForm(forms.ModelForm):
             # If all of these are blank, (i.e., none have a value), then ignore this row
             if not(genus or species or count or collision_risk or density_km or passage_rate):
                 continue
-
-            print('Looping through main sheet')
 
             # If any of these are blank (i.e. any don't have a value), throw up an error and get them to fill it in
             if not(genus and species and count and collision_risk and density_km and passage_rate):

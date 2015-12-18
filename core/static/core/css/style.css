@@ -87,4 +87,10 @@ footer {
     margin-top: 40px;
 }
 #projectsMap .leaflet-container-default {min-height: 500px;}
-form#projectUpdate { margin-top: 20px; }
+
+h2, .nav-pills {
+    margin-bottom: 20px;
+}
+.table-wrapper table {
+    margin-bottom: 0;
+}

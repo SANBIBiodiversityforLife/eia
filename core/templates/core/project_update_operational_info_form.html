@@ -23,8 +23,8 @@
 {% block content %}
 <div class="row"><div class="col-md-10 col-md-offset-2">
 <ul class="nav nav-pills">
-  <li role="presentation" class="active" id="operationalFormNav"><a href="{% url 'project_update_operational_info' project.pk %}">Operational info</a></li>
-  <li role="presentation" id="detailFormNav"><a href="{% url 'project_update' project.pk %}">Project details</a></li>
+  <li role="presentation" class="active"><a href="{% url 'project_update_operational_info' project.pk %}">Operational info</a></li>
+  <li role="presentation"><a href="{% url 'project_update' project.pk %}">Project details</a></li>
 </ul></div></div>
 
 <form role="form" class="form-horizontal" action="" method="post" id="projectUpdate">{% csrf_token %}
@@ -34,9 +34,9 @@
     </div>
     <div id="detailsForm">
     {% endif %}
-    {% if field.name == "turbine_capacity" %}
+    {% if field.name == "equipment_capacity" %}
       {% bootstrap_field field layout='horizontal' addon_after='MW' %}
-    {% elif field.name == "turbine_height" %}
+    {% elif field.name == "equipment_height" %}
       {% bootstrap_field field layout='horizontal' addon_after='m' %}
     {% else %}
     {% bootstrap_field field layout='horizontal' %}
@@ -47,16 +47,16 @@
 </form>
 
 <!-- Modal -->
-<div class="modal fade" id="turbineModal" tabindex="-1" role="dialog" aria-labelledby="turbineModalLabel">
+<div class="modal fade" id="equipmentModal" tabindex="-1" role="dialog" aria-labelledby="equipmentModalLabel">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="turbineModalLabel">Add a turbine make</h4>
+        <h4 class="modal-title" id="equipmentModalLabel">Add an equipment make</h4>
       </div>
-      <form role="form" class="form-horizontal" action="{% url 'turbine_create' %}" method="post" id="turbineForm">{% csrf_token %}
+      <form role="form" class="form-horizontal" action="{% url 'equipment_make_create' %}" method="post" id="equipmentForm">{% csrf_token %}
         <div class="modal-body">
-          {% bootstrap_form turbine_form layout='horizontal' %}
+          {% bootstrap_form equipment_form layout='horizontal' %}
         </div>
         <div class="modal-footer">
           {% buttons submit='Save' layout='horizontal' %}
@@ -73,11 +73,10 @@
 <script src='{% static "core/js/jquery.form.min.js" %}'></script>
 <script src='{% static "core/js/validator.min.js" %}'></script>
 <script src='{% static "datetimepicker/jquery.datetimepicker.js" %}'></script>
+<script src='{% static "core/js/leaflet_turbine_markers.js" %}'></script>
 <script language="javascript">
   $(document).ready(function() {
     // Store references to the maps for later use
-    var project_polygon = {{ project_geojson|safe }};
-    var project_geojson_layer = L.geoJson(project_polygon);
     var turbine_map_project_polygon;
     var turbine_map;
 
@@ -86,12 +85,9 @@
       turbine_map = e.originalEvent.detail.map;
 
       // Once the turbine map has loaded (it loads first), we need to add a project polygon layer to it and zoom in
+      var project_geojson_layer = L.geoJson({{ project_geojson|safe }});
       turbine_map_project_polygon = project_geojson_layer.addTo(turbine_map);
       turbine_map.fitBounds(project_geojson_layer.getBounds().pad(0.5));
-
-      turbine_map.on('click', function(e) {
-        console.log(e);
-      });
     });
 
     // When the form is clicked, remove the project polygon from the turbine map to prevent validation errors
@@ -104,26 +100,26 @@
     $('#id_operational_date').datetimepicker({ timepicker:false, format:'d/m/Y' });
     $('#id_construction_date').datetimepicker({ timepicker:false, format:'d/m/Y' });
 
-    // Turbine form stuff
-    add_turbine = $('#id_turbine_make').parent();
-    var add_turbine_text = '<div class="col-md-4" style="padding-top: 7px">Turbine make not in the list? <a data-toggle="modal" data-target="#turbineModal" class="" href="#" role="button">Add a turbine make</a></div>';
-    add_turbine.parent().append(add_turbine_text);
+    // Equipment make form stuff
+    add_equipment_make = $('#id_equipment_make').parent();
+    var add_equipment_make_text = '<div class="col-md-4" style="padding-top: 7px">Equipment make not in the list? <a data-toggle="modal" data-target="#equipmentModal" class="" href="#" role="button">Add an equipment make</a></div>';
+    add_equipment_make.parent().append(add_equipment_make_text);
 
     // Ajax the form
     var options = {
         dataType: 'json',
         success: function(data) {
             // Change the header
-            $('h4#turbineModalLabel').html('Data successfully uploaded');
-            $('#id_turbine_make').append($('<option>', {
+            $('h4#equipmentModalLabel').html('Data successfully uploaded');
+            $('#id_equipment_make').append($('<option>', {
                 value: data.pk,
                 text: data.name,
                 selected: "selected"
             }));
-            $('#turbineModal').modal('hide');
+            $('#equipmentModal').modal('hide');
         }
     }
-    $('#turbineForm').ajaxForm(options);
+    $('#equipmentForm').ajaxForm(options);
     // TODO add form validation
   })
 </script>

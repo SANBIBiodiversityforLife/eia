@@ -38,7 +38,7 @@ class Developer(models.Model):
         return reverse('developer_detail', kwargs={'pk': self.pk})
 
 
-class TurbineMake(models.Model):
+class EquipmentMake(models.Model):
     """Normalising the turbine make to avoid typos and to make it easier to search by turbine make."""
     name = models.CharField(max_length=50, unique=True)
 
@@ -76,12 +76,14 @@ class Project(models.Model):
     operational_date = models.DateField(null=True, blank=True)
     construction_date = models.DateField(null=True, blank=True)
 
-    # Turbine details
+    # Turbine location needs to be stored as points, solar panels are polygons
     turbine_locations = models.MultiPointField(null=True, blank=True)
-    #turbine_locations = models.MultiPolygonField(null=True, blank=True)
-    turbine_make = models.ForeignKey(TurbineMake, null=True, blank=True)
-    turbine_capacity = models.IntegerField(null=True, blank=True)
-    turbine_height = models.IntegerField(null=True, blank=True)
+    solar_panel_locations = models.PolygonField(null=True, blank=True)
+
+    # Store info about the turbines/solar panels
+    equipment_make = models.ForeignKey(EquipmentMake, null=True, blank=True)
+    equipment_capacity = models.IntegerField(null=True, blank=True)
+    equipment_height = models.IntegerField(null=True, blank=True)
 
     def get_absolute_url(self):
         return reverse('project_update_operational_info', kwargs={'pk': self.pk})
@@ -247,12 +249,11 @@ class MetaData(models.Model):
     Metadata for the 3 different types of datasets - population data, focal site data, fatality data
     """
     project = models.ForeignKey(Project)
-    objects = models.GeoManager()
     collected_to = models.DateTimeField()
     collected_from = models.DateTimeField()
     flagged_for_query = models.BooleanField(default=False)
     control_data = models.BooleanField("This is control data", default=False)
-    # TODO uploader =
+    uploader = models.ForeignKey(User)
 
     # Following two functions are taken from
     # http://stackoverflow.com/questions/7366363/adding-custom-django-model-validation
@@ -337,6 +338,7 @@ class FatalityData(models.Model):
     metadata = models.ForeignKey(MetaData)
     taxa = models.ForeignKey(Taxa)
     coordinate = models.PointField()
+    objects = models.GeoManager()
 
     cause_of_death_choices = (
         ('T', 'Turbine'),
