@@ -53,7 +53,52 @@ class AjaxableResponseMixinDataCreate(object):
     Mixin to add AJAX support to a form.
     Must be used with an object-based FormView (e.g. CreateView)
     """
+
+    def get_success_url(self):
+        return reverse('project_detail', args={'pk': self.kwargs['project_pk']})
+
+    # No idea why this needs to go in, but it seems to http://stackoverflow.com/questions/18605008/curious-about-get-form-kwargs-in-formview
+    def get_form_kwargs(self):
+        print('hi')
+        kwargs = super(AjaxableResponseMixinDataCreate, self).get_form_kwargs()
+        kwargs['project_pk'] = self.kwargs['project_pk']
+        kwargs['uploader'] = self.request.user
+        return kwargs
+
+    # Pass the project as a whole to the template (so we can access name etc as well as pk
+    def get_context_data(self, **kwargs):
+        context = super(AjaxableResponseMixinDataCreate, self).get_context_data(**kwargs)
+        context['project'] = models.Project.objects.get(pk=self.kwargs['project_pk'])
+        return context
+
+
     def form_invalid(self, form):
+        response = super(AjaxableResponseMixinDataCreate, self).form_invalid(form)
+        if self.request.is_ajax():
+            return JsonResponse(form.errors, status=400)
+        else:
+            return response
+
+    def form_valid(self, form):
+        # A custom function which should be present in all data adding forms - note self.kwargs['project_pk']
+        xlsx_with_errors = form.process_data()
+
+        # We make sure to call the parent's form_valid() method because
+        # it might do some processing (in the case of CreateView, it will
+        # call form.save() for example).
+        # response = super(AjaxableResponseMixin, self).form_valid(form)
+        # removed the above as I don't think i need it for my custom function
+
+        if self.request.is_ajax():
+            print('returning data')
+            data = {
+                #'pk': self.object.pk,
+                'error_sheet': xlsx_with_errors
+            }
+            return JsonResponse(data)
+        else:
+            return HttpResponseRedirect(self.get_success_url())
+'''    def form_invalid(self, form):
         response = super(AjaxableResponseMixin, self).form_invalid(form)
         if self.request.is_ajax():
             return JsonResponse(form.errors, status=400)
@@ -78,7 +123,7 @@ class AjaxableResponseMixinDataCreate(object):
             }
             return JsonResponse(data)
         else:
-            return HttpResponseRedirect(self.get_success_url())
+            return HttpResponseRedirect(self.get_success_url())'''
 
 
 class ProfileDetail(DetailView):
@@ -91,54 +136,13 @@ class ProfileUpdate(UpdateView):
     fields = ['first_name', 'last_name', 'phone', 'type']
 
 
-class PopulationDataCreateView(FormView):#class PopulationDataCreateView(AjaxableResponseMixin, FormView):
+
+#class PopulationDataCreateView(FormView):#class PopulationDataCreateView(AjaxableResponseMixin, FormView):
+class PopulationDataCreateView(AjaxableResponseMixinDataCreate, FormView):
     template_name = 'core/populationdata_create_form.html'
     form_class = forms.MetaDataCreateForm
     # create_population_data_spreadsheet()
 
-    def get_success_url(self):
-        return reverse('project_detail', args={'pk': self.kwargs['project_pk']})
-
-    # No idea why this needs to go in, but it seems to http://stackoverflow.com/questions/18605008/curious-about-get-form-kwargs-in-formview
-    def get_form_kwargs(self):
-        kwargs = super(PopulationDataCreateView, self).get_form_kwargs()
-        kwargs['project_pk'] = self.kwargs['project_pk']
-        return kwargs
-
-    def get_context_data(self, **kwargs):
-        context = super(PopulationDataCreateView, self).get_context_data(**kwargs)
-        context['project'] = models.Project.objects.get(pk=self.kwargs['project_pk'])
-        return context
-
-
-    def form_invalid(self, form):
-        response = super(PopulationDataCreateView, self).form_invalid(form)
-        if self.request.is_ajax():
-            return JsonResponse(form.errors, status=400)
-        else:
-            return response
-
-    def form_valid(self, form):
-        print('calling form_valid')
-        # A custom function which should be present in all data adding forms
-        xlsx_with_errors = form.process_data(project_pk=self.kwargs['project_pk'])
-        print('back in form_valid')
-
-        # We make sure to call the parent's form_valid() method because
-        # it might do some processing (in the case of CreateView, it will
-        # call form.save() for example).
-        # response = super(AjaxableResponseMixin, self).form_valid(form)
-        # removed the above as I don't think i need it for my custom function
-
-        if self.request.is_ajax():
-            print('returning data')
-            data = {
-                #'pk': self.object.pk,
-                'error_sheet': xlsx_with_errors
-            }
-            return JsonResponse(data)
-        else:
-            return HttpResponseRedirect(self.get_success_url())
 
 
 class FocalSiteDataCreate(CreateView):

@@ -3,7 +3,8 @@ from django import forms
 from django.db import models
 #from django.core.exceptions import DoesNotExist
 from leaflet.forms.widgets import LeafletWidget
-from core.models import Project, PopulationData, Taxa, TaxaOrder, FocalSite, FocalSiteData, MetaData, Profile, Developer, EquipmentMake
+from core.models import Project, PopulationData, Taxa, TaxaOrder, FocalSite, FocalSiteData, MetaData, Profile, \
+    Developer, EquipmentMake, User
 from core import validators
 from openpyxl import load_workbook
 #from django.contrib.staticfiles.templatetags.staticfiles import static
@@ -130,6 +131,7 @@ class MetaDataCreateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.project_pk = kwargs.pop('project_pk')
+        self.uploader = kwargs.pop('uploader')
         super(MetaDataCreateForm, self).__init__(*args, **kwargs)
         self.fields['collected_from'].label = "Data was collected between"
         self.fields['collected_to'].label = "and"
@@ -142,7 +144,7 @@ class MetaDataCreateForm(forms.ModelForm):
             'collected_to': forms.TextInput(attrs={'class': 'datepicker'})
         }
 
-    def process_data(self, project_pk):
+    def process_data(self):
         print('processing data...')
         # Load the workbook from the file held in memory
         uploaded_data = load_workbook(self.files['upload_data'])
@@ -158,7 +160,11 @@ class MetaDataCreateForm(forms.ModelForm):
         # Create the metadata object and store it to get its primary key
         # This must get deleted after this function if no actual data is stored
         print("adding project to instance...")
-        self.instance.project = Project.objects.get(pk=project_pk)
+        self.instance.project = Project.objects.get(pk=self.project_pk)
+        self.instance.uploader = self.uploader
+
+        # self.instance.request
+
         print("saving project")
         self.instance.save()
         print("project saved")

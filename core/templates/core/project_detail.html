@@ -15,45 +15,50 @@
 </ol>
 {% endblock breadcrumb %}
 
-{% block header-text %}{{ project }} <small>{{ project.developer }}</small>{% endblock %}
-
-{% block content %}
-<h2>Details
+{% block header-text %}{{ project }} <small>{{ project.developer }} - EIA: {{ project.eia_number }}</small>
   <a href="{% url 'project_update' project.id %}" type="button" class="btn btn-default">
     <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Edit details
-  </a>
-</h2>
+  </a>{% endblock %}
+
+{% block content %}
 <p>A {{ project.get_energy_type_display }} energy project,  <strong>developed by {{ project.developer }}</strong>.</p>
-<div class="row">
-  <div class="col-md-6 table-wrapper">
-    <table class="table"><tbody>
-      <tr>
-        <td>EIA reference</td><td>{{ project.eia_number }}</td>
-      </tr>
-      <tr>
-        <td>Equipment details</td><td>"{{ project.equipment_make }}" make, standing {{ project.equipment_height }} m
-        high, with a capacity of {{ project.equipment_capacity }} MW</td>
-      </tr>
-    </tbody></table>
-  </div>
-  <div class="col-md-6">
-    <table class="table"><tbody>
-      <tr>
-        <td>Constructed on</td><td>{{ project.construction_date }}</td>
-      </tr>
-      <tr>
-        <td>Operational from</td><td>{{ project.operational_date }}</td>
-      </tr>
-    </tbody></table>
-  </div>
-</div>
-<h2>Map</h2>
+<ul>
+  <li>Equipment details: "{{ project.equipment_make }}" make{% if project.equipment_height %}, standing
+    {{ project.equipment_height }} m high{% endif %}{% if project.equipment_capacity %}, with a capacity of
+    {{ project.equipment_capacity }} MW{% endif %}</li>
+  {% if project.construction_date %}<li>{{ project.construction_date }}</li>{% endif %}
+  {% if project.operational_date %}<li>{{ project.operational_date }}</li>{% endif %}
+</ul>
 {% leaflet_map "main" callback="main_map_init" %}
+<hr>
 <h2>Population data
   <a href="{% url 'population_data_create' project.id %}" type="button" class="btn btn-info">
     <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add population data
   </a>
 </h2>
+{{ population_data.0.metadata }}
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Species</th>
+      <th>Count</th>
+      <th>Collision risk</th>
+      <th>Density</th>
+      <th>Passage rate</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for data in population_data %}
+    <tr>
+      <td>{{ data.taxa }}</td>
+      <td>{{ data.count }}</td>
+      <td>{{ data.collision_risk }}</td>
+      <td>{{ data.density_km }}</td>
+      <td>{{ data.passage_rate }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
 <h2>Focal site data
   <a href="{% url 'population_data_create' project.id %}" type="button" class="btn btn-info">
     <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add focal site data

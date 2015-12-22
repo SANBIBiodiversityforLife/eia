@@ -3,6 +3,7 @@ from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from core.multiple_select_field import MultipleSelectField
+from django.utils import formats
 
 
 class Profile(models.Model):
@@ -254,6 +255,7 @@ class MetaData(models.Model):
     flagged_for_query = models.BooleanField(default=False)
     control_data = models.BooleanField("This is control data", default=False)
     uploader = models.ForeignKey(User)
+    uploaded_on = models.DateTimeField(auto_now_add=True)
 
     # Following two functions are taken from
     # http://stackoverflow.com/questions/7366363/adding-custom-django-model-validation
@@ -269,6 +271,14 @@ class MetaData(models.Model):
 
     class Meta:
         unique_together = ('collected_to', 'collected_from', 'control_data')
+
+    def __str__(self):
+        text = 'Collected: ' + formats.date_format(self.collected_from, "DATETIME_FORMAT") + ' - ' + \
+               formats.date_format(self.collected_to, "DATETIME_FORMAT") + ' | Uploaded by ' \
+               + self.uploader.first_name + ' ' + self.uploader.last_name + ' on ' + formats.date_format(self.uploaded_on, "DATETIME_FORMAT")
+        if self.control_data:
+            text += ' (control data)'
+        return text
 
 
 class PopulationData(models.Model):
@@ -297,7 +307,7 @@ class PopulationData(models.Model):
         return reverse('project_detail', kwargs={'pk': self.pk})
 
     def __str__(self):
-        return self.current_name
+        return self.collision_risk
 
 
 class FocalSiteData(models.Model):

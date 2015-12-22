@@ -173,7 +173,7 @@
                 $('#modalMessageSuccess').fadeIn();
             }
         },
-        error: function(jqXHR jqXHR, String textStatus, String errorThrown){
+        error: function(jqXHR, textStatus, errorThrown){
             // Make the message appear to fade in
             $('#modalMessage').hide();
             $('#serverErrorMessage').text(errorThrown);
