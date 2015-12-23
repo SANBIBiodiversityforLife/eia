@@ -1,0 +1,70 @@
+{% extends "core/base_project_detail.html" %}
+{% load leaflet_tags %}
+{% load static %}
+
+{% block css %}
+{% leaflet_js %}
+{% leaflet_css %}
+{% endblock css %}
+
+{% block subheader %}focal site{% endblock subheader %}
+
+{% block subcontent %}
+<h3>
+  Focal site locations, and count data associated with focal sites
+  <a href="{% url 'population_data_create' project.id %}" type="button" class="btn btn-info pull-right">
+  <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add focal site data
+  </a>
+</h3>
+{% if focal_sites %}
+  {% if focal_site_metadata %}
+  <form id="select_focal_site_dataset">
+    <div class="form-group">
+      <label for="metadata">Choose a dataset to view: </label>
+      <select class="form-control" id="metadata">
+        {% for data in focal_site_metadata %}
+        <option>{{ data }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Species</th>
+        <th>Count</th>
+        <th>Life stage</th>
+        <th>Activity</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for data in focal_site_metadata %}
+      <tr>
+        <td>{{ data.taxa }}</td>
+        <td>{{ data.count }}</td>
+        <td>{{ data.life_stage }}</td>
+        <td>{{ data.activity }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="alert alert-warning" role="alert">
+    <p>Does this dataset look incorrect? <a href="{% url 'population_data_create' project.id %}" type="button" class="btn btn-sm btn-danger">
+    <span class="glyphicon glyphicon-flag" aria-hidden="true"></span> Flag it for removal by an administrator
+    </a></p>
+  </div>
+  {% else %}
+  <p>No focal site data yet added.</p>
+  {% endif %}
+{% else %}
+  <p>No focal sites yet added.</p>
+{% endif %}
+
+
+{% endblock subcontent %}
+
+{% block js %}
+<script type="text/javascript">
+
+</script>
+{% endblock js %}

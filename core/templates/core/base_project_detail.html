@@ -1,0 +1,36 @@
+{% extends "core/_base.html" %}
+{% load static %}
+
+{% block breadcrumb %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li><a href="{% url 'projects_list' %}">Projects</a></li>
+  {% with request.resolver_match.url_name as url_name %}
+  {% if url_name == 'project_detail' %}<li class="active">{{ project.name }}</li>
+    {% else %}
+      <li><a href="{% url 'project_detail' project.id %}">{{ project.name }}</a></li>
+      <li class="active">{% if url_name == 'population_data' %}Population data{% endif %}
+      </li>
+    {% endif %}
+  {% endwith %}
+</ol>
+{% endblock breadcrumb %}
+
+{% block header-text %}{{ project }} <small>{{ project.developer }} - EIA: {{ project.eia_number }}</small>{% endblock %}
+
+{% block content %}
+<ul class="nav nav-tabs">
+  {% with request.resolver_match.url_name as url_name %}
+  <li role="presentation" class="{% if url_name == 'project_detail' %}active{% endif %}">
+    <a href="{% url 'project_detail' project.id %}">Details</a></li>
+  <li role="presentation" class="{% if url_name == 'population_data' %}active{% endif %}">
+    <a href="{% url 'population_data' project.id %}">Populations</a></li>
+  <li role="presentation" class="{% if url_name == 'focal_site_data' %}active{% endif %}">
+    <a href="{% url 'focal_site_data' project.id %}">Focal sites</a></li>
+  <li role="presentation" class="{% if url_name == 'fatality_data' %}active{% endif %}">
+    <a href="#">Fatalities</a></li>
+  {% endwith %}
+</ul>
+{% block subcontent %}{% endblock %}
+{% endblock content %}
+

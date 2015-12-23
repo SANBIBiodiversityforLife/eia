@@ -1,0 +1,62 @@
+{% extends "core/base_project_detail.html" %}
+{% load leaflet_tags %}
+{% load static %}
+
+{% block css %}
+{% leaflet_js %}
+{% leaflet_css %}
+{% endblock css %}
+
+{% block subheader %}details{% endblock subheader %}
+
+{% block subcontent %}
+<h3>
+  Species population count, census and estimate data
+  <a href="{% url 'population_data_create' project.id %}" type="button" class="btn btn-info pull-right">
+  <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add population data
+  </a>
+</h3>
+<form id="select_population_dataset">
+  <div class="form-group">
+    <label for="populationMetadata">Choose a dataset to view: </label>
+    <select class="form-control" id="populationMetadata">
+      {% for data in population_metadata %}
+      <option>{{ data }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Species</th>
+      <th>Count</th>
+      <th>Collision risk</th>
+      <th>Density</th>
+      <th>Passage rate</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for data in population_data %}
+    <tr>
+      <td>{{ data.taxa }}</td>
+      <td>{{ data.count }}</td>
+      <td>{{ data.collision_risk }}</td>
+      <td>{{ data.density_km }}</td>
+      <td>{{ data.passage_rate }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<div class="alert alert-warning" role="alert">
+  <p>Does this dataset look incorrect? <a href="{% url 'population_data_create' project.id %}" type="button" class="btn btn-sm btn-danger">
+  <span class="glyphicon glyphicon-flag" aria-hidden="true"></span> Flag it for removal by an administrator
+  </a></p>
+</div>
+{% endblock subcontent %}
+
+{% block js %}
+<script type="text/javascript">
+
+</script>
+{% endblock js %}

@@ -21,32 +21,6 @@ from django.contrib.auth import get_user_model
 def index(request):
     return render(request, 'core/index.html', {'stats': 'hello'})
 
-class AjaxableResponseMixin(object):
-    """
-    Mixin to add AJAX support to a form.
-    Must be used with an object-based FormView (e.g. CreateView)
-    """
-    def form_invalid(self, form):
-        response = super(AjaxableResponseMixin, self).form_invalid(form)
-        if self.request.is_ajax():
-            return JsonResponse(form.errors, status=400)
-        else:
-            return response
-
-    def form_valid(self, form):
-        # We make sure to call the parent's form_valid() method because
-        # it might do some processing (in the case of CreateView, it will
-        # call form.save() for example).
-        response = super(AjaxableResponseMixin, self).form_valid(form)
-        if self.request.is_ajax():
-            data = {
-                'pk': self.object.pk,
-                'name': self.object.name,
-            }
-            return JsonResponse(data)
-        else:
-            return response
-
 
 class AjaxableResponseMixinDataCreate(object):
     """
@@ -98,32 +72,6 @@ class AjaxableResponseMixinDataCreate(object):
             return JsonResponse(data)
         else:
             return HttpResponseRedirect(self.get_success_url())
-'''    def form_invalid(self, form):
-        response = super(AjaxableResponseMixin, self).form_invalid(form)
-        if self.request.is_ajax():
-            return JsonResponse(form.errors, status=400)
-        else:
-            return response
-
-    def form_valid(self, form):
-        # A custom function which should be present in all data adding forms
-        xlsx_with_errors = form.process_data(project_pk=self.kwargs['project_pk'])
-
-        # We make sure to call the parent's form_valid() method because
-        # it might do some processing (in the case of CreateView, it will
-        # call form.save() for example).
-        # response = super(AjaxableResponseMixin, self).form_valid(form)
-        # removed the above as I don't think i need it for my custom function
-        import pdb; pdb.set_trace()
-        if self.request.is_ajax():
-            print('returning data')
-            data = {
-                #'pk': self.object.pk,
-                'error_sheet': xlsx_with_errors
-            }
-            return JsonResponse(data)
-        else:
-            return HttpResponseRedirect(self.get_success_url())'''
 
 
 class ProfileDetail(DetailView):
@@ -136,18 +84,13 @@ class ProfileUpdate(UpdateView):
     fields = ['first_name', 'last_name', 'phone', 'type']
 
 
-
-#class PopulationDataCreateView(FormView):#class PopulationDataCreateView(AjaxableResponseMixin, FormView):
 class PopulationDataCreateView(AjaxableResponseMixinDataCreate, FormView):
     template_name = 'core/populationdata_create_form.html'
     form_class = forms.MetaDataCreateForm
-    # create_population_data_spreadsheet()
 
 
-
-class FocalSiteDataCreate(CreateView):
-    model = models.FocalSiteData
-    template_name_suffix = '_create_form'
+class FocalSiteDataCreateView(AjaxableResponseMixinDataCreate, FormView):
+    template_name = 'core/focalsitedata_create_form.html'
     form_class = forms.FocalSiteDataCreateForm
 
 
@@ -299,14 +242,49 @@ def project_detail(request, pk):
     # Project is a queryset (from filter), as this is what geojson requires, now return the actual object
     project = project[0]
 
-    # Get pre & post construction population data
-    population_data = models.PopulationData.objects.filter(metadata__project__pk=pk)
-
     # Render the context
     return render_to_response('core/project_detail.html',
                               {'project_location': project_location_geojson,
                                'turbine_locations': turbine_locations_geojson,
-                               'population_data': population_data,
+                               'project': project},
+                              RequestContext(request))
+
+
+def population_data(request, pk):
+    # Retrieve the project
+    project = models.Project.objects.get(pk=pk)
+
+    population_metadata = models.MetaData.objects.filter(project__pk=pk)
+
+    # Get pre & post construction population data
+    population_data = models.PopulationData.objects.filter(metadata=population_metadata.first().pk)
+
+    # Render the context
+    return render_to_response('core/project_population_data.html',
+                              {'population_data': population_data,
+                               'population_metadata': population_metadata,
+                               'project': project},
+                              RequestContext(request))
+
+
+def focal_site_data(request, pk):
+    # Retrieve the project
+    project = models.Project.objects.get(pk=pk)
+
+    # Get pre & post construction population data
+    focal_site_data = models.FocalSiteData.objects.filter(metadata__project__pk=pk)
+
+    # Get all of the unique metadatas
+    focal_site_metadata = focal_site_data.values_list('metadata', flat=True).distinct()
+
+    # Get all of the unique focal sites
+    focal_sites = focal_site_data.values_list('focal_site', flat=True).distinct()
+
+    # Render the context
+    return render_to_response('core/project_focal_site_data.html',
+                              {'focal_site_data': focal_site_data,
+                               'focal_site_metadata': focal_site_metadata,
+                               'focal_sites': focal_sites,
                                'project': project},
                               RequestContext(request))
 

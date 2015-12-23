@@ -43,6 +43,10 @@ urlpatterns = [
     url(r'^project/update-operational/(?P<pk>[0-9]+)/$', login_required(views.ProjectUpdateOperationalInfo.as_view()), name='project_update_operational_info'),
     url(r'^project_delete/(?P<pk>[0-9]+)/$', login_required(views.ProjectDelete.as_view()), name='project_delete'),
 
+    # Data view URLS
+    url(r'^project/(?P<pk>[0-9]+)/population_data$', login_required(views.population_data), name='population_data'),
+    url(r'^project/(?P<pk>[0-9]+)/focal_site_data', login_required(views.focal_site_data), name='focal_site_data'),
+
     # Developer
     url(r'^developer/create/$', login_required(views.DeveloperCreate.as_view()), name='developer_create'),
     url(r'^developer/(?P<pk>[0-9]+)/$', login_required(views.DeveloperDetail.as_view()), name='developer_detail'),
@@ -55,8 +59,9 @@ urlpatterns = [
     url(r'^project/(?P<project_pk>[0-9]+)/population_data/create/',
         login_required(views.PopulationDataCreateView.as_view()),
         name='population_data_create'),
-    #url(r'^project/(?P<project_pk>[0-9]+)/population_data/create/', views.create_population_data, name='population_data_create'),
+    url(r'^project/(?P<project_pk>[0-9]+)/focal_site_data/create/',
+        login_required(views.FocalSiteDataCreateView.as_view()),
+        name='focal_site_data_create'),
 
     url(r'^focal_site/create/$', login_required(views.FocalSiteCreate.as_view()), name='focal_site_create'),
-    url(r'^focal_site_data/create/$', login_required(views.FocalSiteDataCreate.as_view()), name='focal_site_data_create'),
 ]

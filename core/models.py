@@ -272,10 +272,22 @@ class MetaData(models.Model):
     class Meta:
         unique_together = ('collected_to', 'collected_from', 'control_data')
 
+    def is_post_construction(self):
+        if self.project.construction_date:
+            return self.collected_from > self.project.construction_date
+        else:
+            # There is no construction date up yet
+            return False
+
     def __str__(self):
         text = 'Collected: ' + formats.date_format(self.collected_from, "DATETIME_FORMAT") + ' - ' + \
-               formats.date_format(self.collected_to, "DATETIME_FORMAT") + ' | Uploaded by ' \
-               + self.uploader.first_name + ' ' + self.uploader.last_name + ' on ' + formats.date_format(self.uploaded_on, "DATETIME_FORMAT")
+               formats.date_format(self.collected_to, "DATETIME_FORMAT")
+        if self.is_post_construction():
+            text += '(post construction)'
+        else:
+            text += '(pre construction)'
+        text += ' | Uploaded by ' + self.uploader.first_name + ' ' + self.uploader.last_name + ' on ' + \
+                formats.date_format(self.uploaded_on, "DATETIME_FORMAT")
         if self.control_data:
             text += ' (control data)'
         return text

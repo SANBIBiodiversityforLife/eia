@@ -88,9 +88,15 @@ footer {
 }
 #projectsMap .leaflet-container-default {min-height: 500px;}
 
-h2, .nav-pills {
+.nav-tabs, h3, h2, .nav-pills {
     margin-bottom: 20px;
+}
+h3 {
+    line-height: 1.3em;
 }
 .table-wrapper table {
     margin-bottom: 0;
+}
+.leaflet-container {
+    margin-bottom: 20px;
 }
