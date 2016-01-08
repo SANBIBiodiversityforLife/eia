@@ -5,6 +5,9 @@
 {% block css %}
 {% leaflet_js %}
 {% leaflet_css %}
+<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'leaflet-awesome-markers/dist/leaflet.awesome-markers.css' %}">
+<script src="{% static 'leaflet-awesome-markers/dist/leaflet.awesome-markers.min.js' %}"></script>
 {% endblock css %}
 
 {% block subheader %}details{% endblock subheader %}
@@ -12,9 +15,9 @@
 {% block subcontent %}
 <h3>
   A {{ project.get_energy_type_display }} energy project,  <strong>developed by {{ project.developer }}</strong>.
-  <a href="{% url 'project_update' project.id %}" type="button" class="btn btn-info pull-right">
+  {% if perms.core.contributor %}<a href="{% url 'project_update' project.id %}" type="button" class="btn btn-info pull-right">
   <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Edit details
-  </a>
+  </a>{% endif %}
 </h3>
 {% leaflet_map "main" callback="main_map_init" %}
 <!--Equipment details:
@@ -86,7 +89,7 @@ function main_map_init(map, options) { // See http://blog.mathieu-leplatre.info/
     {% if turbine_locations %}
     // Add the turbine points (if there are any)
     var turbine_points = new L.geoJson({% autoescape off %}{{ turbine_locations }}{% endautoescape %}, {
-      style: myStyle,
+      //style: myStyle,
       pointToLayer: function(feature, latlng) {
           return L.marker(latlng, {icon: turbineIcon});
       },

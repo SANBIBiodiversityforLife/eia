@@ -75,13 +75,16 @@ footer {
 }
 #id_location_map { max-width: 500px;}
 
-/* Bootstrap override .navbar-nav>li>a { line-height: 70px; }*/
+/* Bootstrap override .navbar-nav>li>a { line-height: 70px; }
 .navbar { min-height:80px !important; font-size: large; }
 .navbar-brand { padding: 10px 10px; }
 .navbar-nav > li > a { margin-top: 20px !important }
-
+*/
 .pull-right {
     float: right;
+}
+.align-right {
+    text-align: right;
 }
 .form-sign-in {
     margin-top: 40px;
@@ -99,4 +102,11 @@ h3 {
 }
 .leaflet-container {
     margin-bottom: 20px;
+}
+#topLogo {
+    display: block;
+    margin: 10px auto;
+}
+dd, dt {
+    line-height: 2.8em;
 }

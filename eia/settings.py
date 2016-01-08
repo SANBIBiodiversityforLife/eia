@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = (
+    'django_admin_bootstrapped',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -179,4 +180,14 @@ BOOTSTRAP3 = {
     'horizontal_label_class': 'col-md-2',
     # Field class to use in horizontal forms
     'horizontal_field_class': 'col-md-5'
+}
+
+# Django-admin-bootstrap
+DAB_FIELD_RENDERER = 'django_admin_bootstrapped.renderers.BootstrapFieldRenderer'
+from django.contrib import messages
+
+MESSAGE_TAGS = {
+            messages.SUCCESS: 'alert-success success',
+            messages.WARNING: 'alert-warning warning',
+            messages.ERROR: 'alert-danger error'
 }

@@ -12,11 +12,14 @@
 {% block subcontent %}
 <h3>
   Focal site locations, and count data associated with focal sites
-  <a href="{% url 'population_data_create' project.id %}" type="button" class="btn btn-info pull-right">
-  <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add focal site data
+  {% if perms.core.contributor %}
+  <a href="{% url 'focal_site_create' project.id %}" type="button" class="btn btn-warning align-right">
+    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add focal site
   </a>
+  {% endif %}
 </h3>
-{% if focal_sites %}
+{% if focal_site_locations %}
+  {% leaflet_map "main" callback="main_map_init" %}
   {% if focal_site_metadata %}
   <form id="select_focal_site_dataset">
     <div class="form-group">
@@ -54,17 +57,74 @@
     </a></p>
   </div>
   {% else %}
-  <p>No focal site data yet added.</p>
+  <p>No focal site data yet.</p>
   {% endif %}
 {% else %}
-  <p>No focal sites yet added.</p>
+  <p>No focal sites yet.</p>
 {% endif %}
-
-
 {% endblock subcontent %}
 
 {% block js %}
 <script type="text/javascript">
+function main_map_init(map, options) { // See http://blog.mathieu-leplatre.info/geodjango-maps-with-leaflet.html
+    // Add the project polygon
+    var project_polygon = new L.geoJson({% autoescape off %}{{ project_location }}{% endautoescape %});
+    project_polygon.addTo(map);
 
+    // Fit the map bounds to the project polygon
+    map.fitBounds(project_polygon.getBounds());
+
+    {% if turbine_locations %}
+    // Add the turbine points (if there are any)
+    var turbine_points = new L.geoJson({% autoescape off %}{{ turbine_locations }}{% endautoescape %}, {
+      //style: myStyle,
+      pointToLayer: function(feature, latlng) {
+          return L.marker(latlng, {icon: turbineIcon});
+      },
+    })
+    turbine_points.addTo(map);
+    {% endif %}
+
+    {% if focal_site_locations %}
+    // Add the focal sites
+    function onEachFeature(feature, layer) {
+      polygon = L.polygon(feature.geometry.coordinates);
+      polygon_center = polygon.getBounds().getCenter();
+      if (feature.properties && feature.properties.name) {
+        html = '<strong>' + feature.properties.name + ' (' + feature.properties.order +' focal site)</strong><br>';
+        //html += '<br><strong>Approx centroid:</strong> ' + polygon_center.lat.toFixed(4) + ', ' + polygon_center.lng.toFixed(4);
+        html += '<br><strong>Centroid:</strong> ' + feature.properties.centroid[0].toFixed(4) + ', ' + feature.properties.centroid[1].toFixed(4);
+        html += '<br><strong>Habitat:</strong> ' + feature.properties.habitat;
+        html += '<br><strong>Activity:</strong> ' + feature.properties.activity;
+
+        /*var button_template = '<a href="#" type="button" class="btn"><span class="glyphicon" aria-hidden="true"></span> </a>';
+        var b = $(button_template);
+        b.addClass('btn-default');
+        b.attr('href', "{% url 'focal_site_data_create' project.id project.id %}");
+        $(b + ' .glyphicon').addClass('glyphicon-th');
+        b.text(' View test');
+        html += b.html();*/
+
+        html += '<br><br>';
+        if(feature.properties.has_data) {
+          html += '<a href="' + "{% url 'focal_site_data' project.id %}" + feature.properties.pk + '" type="button" class="btn btn-default">';
+          html += '<span class="glyphicon glyphicon-th" aria-hidden="true"></span> View datasets</a>';
+        }
+        html += ' <a href="' + "{% url 'focal_site_data_create' project.id project.id %}" + '" type="button" class="btn btn-default">';
+        html += '<span class="glyphicon glyphicon-upload" aria-hidden="true"></span> Upload a dataset</a>';
+        layer.bindPopup(html);
+      }
+    }
+    var focal_site_style = {
+      'color': '#FF0000',
+      'weight': 2
+    }
+    var focal_site_polygons = new L.geoJson({% autoescape off %}{{ focal_site_locations }}{% endautoescape %},
+                                            { style: focal_site_style, onEachFeature: onEachFeature });
+    focal_site_polygons.addTo(map);
+    {% endif %}
+
+    // Data points?
+}
 </script>
 {% endblock js %}

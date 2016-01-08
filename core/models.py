@@ -1,15 +1,15 @@
 from django.contrib.gis.db import models
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from core.multiple_select_field import MultipleSelectField
 from django.utils import formats
 
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+    #first_name = models.CharField(max_length=100)
+    #last_name = models.CharField(max_length=100)
     phone = models.CharField(max_length=100)
     #profile_type_choices = models.ManyToManyField(ProfileTypeChoices)
 
@@ -24,7 +24,9 @@ class Profile(models.Model):
         ('OT', 'Other')
     )
     type = models.CharField(max_length=2, choices=TYPE_CHOICES)
-    # type = MultipleSelectField(max_length=2, choices=TYPE_CHOICES, null=True, blank=True)
+
+    def get_absolute_url(self):
+        return reverse('profile_detail')
 
 class Developer(models.Model):
     """The companies who run the projects."""
@@ -99,6 +101,14 @@ class Project(models.Model):
     #def clean(self):
     #    import pdb; pdb.set_trace()
 
+    class Meta:
+        permissions = (
+            ('contributor', 'Can contribute data (i.e. upload datasets and create projects)'),
+            ('trusted', 'Can view sensitive data'),
+            ('request_contributor', 'Has requested contributor status'),
+            ('request_trusted', 'Has requested trusted status'),
+        )
+
 
 class PreviousProjectNames(models.Model):
     """
@@ -146,6 +156,9 @@ class TaxaOrder(models.Model):
 
     def __str__(self):
         return self.order
+
+    def natural_key(self):
+        return self.__str__()
 
 
 class Taxa(models.Model):
@@ -244,6 +257,11 @@ class FocalSite(models.Model):
     )
     habitat = models.CharField(max_length=2, choices=habitat_choices)
 
+    def get_absolute_url(self):
+        return reverse('focal_site_data', kwargs={'pk': self.project.pk})
+
+    def get_location_coords(self):
+        return 'asdfff'
 
 class MetaData(models.Model):
     """
@@ -291,6 +309,10 @@ class MetaData(models.Model):
         if self.control_data:
             text += ' (control data)'
         return text
+
+    def get_data_object(self):
+        # Population data
+        models.PopulationData.objects.get(metadata=self)
 
 
 class PopulationData(models.Model):
@@ -372,3 +394,16 @@ class FatalityData(models.Model):
         ('U', 'Undetermined')
     )
     cause_of_death = models.CharField(max_length=1, choices=cause_of_death_choices)
+
+
+class RemovalFlag(models.Model):
+    """
+    Allows users to flag datasets for removal
+    """
+    metadata = models.ForeignKey(MetaData)
+    reason = models.TextField(max_length=2000)
+    requested_by = models.ForeignKey(User)
+    requested_on = models.DateTimeField(auto_now_add=True)
+
+    def get_absolute_url(self):
+        return reverse('projects_list')

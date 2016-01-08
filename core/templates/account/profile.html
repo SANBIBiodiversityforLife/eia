@@ -1,24 +1,73 @@
 {% extends "core/_base.html" %}
 
-{% block header-text %}Your Profile{% endblock %}
+{% block header-text %}{{ user.first_name }} {{ user.last_name }}'s profile
+  <a href="{% url 'profile_update' %}" type="button" class="btn btn-info">
+  <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Edit</a>{% endblock %}
 
 {% block breadcrumb %}
 <ol class="breadcrumb">
-  <li><a href="#">Home</a></li>
+  <li><a href="/">Home</a></li>
   <li class="active">Profile</li>
 </ol>
 {% endblock breadcrumb %}
 
 {% block content %}
 {% if user %}
-    <h2>Welcome, {{ user.first_name }} {{ user.last_name }}</h2>
-    Phone: {{ user.profile.phone }}
-    Type: {{ user.profile.type }}
-    {% for account in user.socialaccount_set.all %}
-        <h2 style="text-transform:capitalize;">{{ account.provider }} account data</h2>
-        <p><img width="50" height="50" src="{{ account.get_avatar_url }}" /></p>
-        <p>UID: <a href="{{account.extra_data.link }}">{{ account.uid }}</a></p>
-        <p>Profile Link: <a href="{{ account.extra_data.link }}">{{ account.extra_data.link }}</a></p>
-    {% endfor %}
+    <dl class="dl-horizontal">
+      <dt>Email:</dt>
+      <dd>{{ user.email }}</dd>
+      <dt>Phone:</dt>
+      <dd>{{ user.profile.phone }}</dd>
+      <dt>Account type:</dt>
+      <dd>{{ user.profile.get_type_display }}</dd>
+      <dt>Statuses</dt>
+      <dd>
+        <!-- Contributor logic -->
+        {% if perms.core.contributor %}
+        <button type="button" class="btn btn-info" disabled="disabled">
+          <span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
+          <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+          You are a contributor (allows you to upload data and create projects).
+        </button>
+        {% elif perms.core.request_contributor %}
+        <button type="button" class="btn btn-info" disabled="disabled">
+          <span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
+          <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+          You have requested contributor status (allows you to upload data and create projects).
+        </button>
+        {% else %}
+          You are not a able to upload data and create projects (contributor).
+        {% endif %}
+        <br>
+        <!-- Trusted logic -->
+        {% if perms.core.trusted %}
+        <button type="button" class="btn btn-warning" disabled="disabled">
+          <span class="glyphicon glyphicon-lock" aria-hidden="true"></span>
+          <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+           You are a trusted user (allows you to view sensitive data).
+        </button>
+        {% elif perms.core.request_trusted %}
+        <button type="button" class="btn btn-warning" disabled="disabled">
+          <span class="glyphicon glyphicon-lock" aria-hidden="true"></span>
+          <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+          You have requested trusted status (allows you to view sensitive data).
+        </button>
+        {% else %}
+          You are not able to view sensitive data (trusted user).
+        {% endif %}
+      </dd>
+
+      {% for account in user.socialaccount_set.all %}
+          <h2>{{ account.provider }} account data</h2>
+          <p><img width="50" height="50" src="{{ account.get_avatar_url }}" /></p>
+          <dt>UID</dt>
+          <dd><a href="{{account.extra_data.link }}">{{ account.uid }}</a></dd>
+          <!--<p>Username: {{ account.extra_data.username }}</p>
+          <p>First Name: {{ account.extra_data.first_name }}</p>
+          <p>Last Name: {{ account.extra_data.last_name }}</p>-->
+          <dt>Profile Link</dt>
+          <dd><a href="{{ account.extra_data.link }}">{{ account.extra_data.link }}</a></dd>
+      {% endfor %}
+    </dl>
 {% endif %}
 {% endblock content %}

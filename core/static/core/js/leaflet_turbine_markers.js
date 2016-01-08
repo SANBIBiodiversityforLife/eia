@@ -1,4 +1,4 @@
-var turbineIcon = new L.icon({
+/*var turbineIcon = new L.icon({
     iconUrl: '/static/core/img/icons/turbine-icon.png',
     shadowUrl: '/static/core/img/icons/turbine-shadow.png',
 
@@ -12,4 +12,10 @@ var myStyle = {
     "color": "#ff7800",
     "weight": 5,
     "opacity": 0.65
-};
+};*/
+
+var turbineIcon = L.AwesomeMarkers.icon({
+    prefix: 'fa', //font awesome rather than bootstrap
+    markerColor: 'orange', // see colors above
+    icon: 'asterisk' //http://fortawesome.github.io/Font-Awesome/icons/
+});

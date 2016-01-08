@@ -78,7 +78,72 @@ def population_data_spreadsheet_validation(wb, ws, species_validation_sheet, gen
     passage_rate_dv.ranges.append('F2:F1048576')
 
 
+def create_template_spreadsheet():
+    # Create the workbook
+    wb = Workbook()
+
+    # Create the template spreadsheet
+    ws = wb.active
+    ws.title = 'Main'
+    ws.sheet_properties.tabColor = "1072BA"
+
+    # Freeze panes
+    ws.freeze_panes = ws['A2']
+
+    # Add the columns
+    ws['A1'] = 'genus'
+    ws['B1'] = 'species'
+
+    # Format them in bold
+    heading = Style(font=Font(bold=True), protection=Protection(locked=True, hidden=False))
+    for row in ws.iter_rows('A1:F1'):
+        for cell in row:
+            cell.style = heading
+
+    # Get a list of the valid species & genera for validation
+    genera = sorted(list(models.Taxa.objects.values_list('genus', flat=True).distinct()))
+    species = sorted(list(models.Taxa.objects.values_list('species', flat=True).distinct()))
+
+    # Create additional sheets to hold them
+    genus_validation_sheet = wb.create_sheet()
+    genus_validation_sheet.title = 'Valid Genera'
+    species_validation_sheet = wb.create_sheet()
+    species_validation_sheet.title = 'Valid Species'
+
+    # Population the cells
+    for i, g in enumerate(genera, 1):
+        genus_validation_sheet.cell(row=i, column=1, value=g)
+    for i, s in enumerate(species, 1):
+        species_validation_sheet.cell(row=i, column=1, value=s)
+
+    # Set column widths
+    ws.column_dimensions['A'].width = 20
+    ws.column_dimensions['B'].width = 20
+    ws.column_dimensions['C'].width = 8
+    ws.column_dimensions['D'].width = 13
+    ws.column_dimensions['E'].width = 12
+    ws.column_dimensions['F'].width = 12
+    ws.column_dimensions['G'].width = 100
+
+    # Add the validation
+    population_data_spreadsheet_validation(wb, ws, species_validation_sheet, genus_validation_sheet)
+
+    return wb
+
+
 def create_population_data_spreadsheet():
+    wb = create_template_spreadsheet()
+    ws = wb.active
+    ws['C1'] = 'count'
+    ws['D1'] = 'collision_risk'
+    ws['E1'] = 'density_km'
+    ws['F1'] = 'passage_rate'
+    
+    # Close & save
+    wb.save('core' + static('population_data_for_upload.xlsx'))
+
+
+def create_focal_site_data_spreadsheet():
     # Create the workbook
     wb = Workbook()
 

@@ -22,8 +22,10 @@ urlpatterns = [
     # Django allauth
     url(r'^accounts/', include('allauth.urls')),
     #url(r'^accounts/profile/', login_required(views.ProfileDetail.as_view()), name='profile_detail'),
-    url(r'^accounts/profile/', login_required(views.TemplateView.as_view(template_name='account/profile.html')), name='profile_detail'),
+    url(r'^accounts/profile/$', login_required(views.TemplateView.as_view(template_name='account/profile.html')), name='profile_detail'),
+    url(r'^accounts/profile/(?P<pk>[0-9]+)$', login_required(views.TemplateView.as_view(template_name='account/profile.html')), name='profile_detail'),
     url(r'^accounts/profile/edit$', login_required(views.ProfileUpdate.as_view()), name='profile_update'),
+    url(r'^accounts/profile/request_status/(?P<status>request_(trusted|contributor))/$', login_required(views.request_status), name='request_status'),
 
     # Admin section
     url(r'^admin/', include(admin.site.urls)),
@@ -44,8 +46,14 @@ urlpatterns = [
     url(r'^project_delete/(?P<pk>[0-9]+)/$', login_required(views.ProjectDelete.as_view()), name='project_delete'),
 
     # Data view URLS
-    url(r'^project/(?P<pk>[0-9]+)/population_data$', login_required(views.population_data), name='population_data'),
-    url(r'^project/(?P<pk>[0-9]+)/focal_site_data', login_required(views.focal_site_data), name='focal_site_data'),
+    url(r'^project/(?P<pk>[0-9]+)/population_data/$', login_required(views.population_data), name='population_data'),
+    url(r'^project/(?P<pk>[0-9]+)/population_data/(?P<metadata_pk>[0-9]+)$', login_required(views.population_data), name='population_data'),
+    url(r'^project/(?P<pk>[0-9]+)/focal_site_data/$', login_required(views.focal_site_data), name='focal_site_data'),
+    url(r'^project/(?P<pk>[0-9]+)/focal_site_data/(?P<focal_site_pk>[0-9]+)/$', login_required(views.focal_site_data), name='focal_site_data'),
+    url(r'^project/(?P<pk>[0-9]+)/focal_site_data/(?P<focal_site_pk>[0-9]+)/(?P<metadata_pk>[0-9]+)$', login_required(views.focal_site_data), name='focal_site_data'),
+
+    # Flag for removal
+    url(r'^project/(?P<pk>[0-9]+)/population_data/flag_for_removal$', login_required(views.flag_for_removal), name='flag_for_removal'),
 
     # Developer
     url(r'^developer/create/$', login_required(views.DeveloperCreate.as_view()), name='developer_create'),
@@ -54,14 +62,14 @@ urlpatterns = [
     # Turbine
     url(r'^equipment/create/$', login_required(views.EquipmentMakeCreate.as_view()), name='equipment_make_create'),
 
-    # Data related URLs
+    # Data add URLs
     url(r'^project/(?P<project_pk>[0-9]+)/data/', login_required(views.DataList.as_view()), name='data_list'),
     url(r'^project/(?P<project_pk>[0-9]+)/population_data/create/',
         login_required(views.PopulationDataCreateView.as_view()),
         name='population_data_create'),
-    url(r'^project/(?P<project_pk>[0-9]+)/focal_site_data/create/',
+    url(r'^project/(?P<project_pk>[0-9]+)/focal_site_data/focal_site/(?P<focal_site_pk>[0-9]+)/create/',
         login_required(views.FocalSiteDataCreateView.as_view()),
         name='focal_site_data_create'),
 
-    url(r'^focal_site/create/$', login_required(views.FocalSiteCreate.as_view()), name='focal_site_create'),
+    url(r'^project/(?P<project_pk>[0-9]+)/focal_site_data/focal_site/create/$', login_required(views.FocalSiteCreate.as_view()), name='focal_site_create'),
 ]

@@ -1,25 +1,110 @@
 {% extends "core/_base.html" %}
+{% load bootstrap3 %}
 
 {% block breadcrumb %}
 <ol class="breadcrumb">
-  <li><a href="#">Home</a></li>
+  <li><a href="/">Home</a></li>
   <li><a href="{% url 'profile_detail' %}">Profile</a></li>
-  <li class="active">Current project</li>
+  <li class="active">Edit</li>
 </ol>
 {% endblock breadcrumb %}
 
+{% block header-text %}Edit profile{% endblock %}
+
 {% block content %}
 {% if user %}
-    <h1>Welcome, {{ user.first_name }}</h1>
-    {{ user.profile.phone }}
-    {% for account in user.socialaccount_set.all %}
-        <h2 style="text-transform:capitalize;">{{ account.provider }} account data</h2>
-        <p><img width="50" height="50" src="{{ account.get_avatar_url }}" /></p>
-        <p>UID: <a href="{{account.extra_data.link }}">{{ account.uid }}</a></p>
-        <p>Username: {{ account.extra_data.username }}</p>
-        <p>First Name: {{ account.extra_data.first_name }}</p>
-        <p>Last Name: {{ account.extra_data.last_name }}</p>
-        <p>Profile Link: <a href="{{ account.extra_data.link }}">{{ account.extra_data.link }}</a></p>
-    {% endfor %}
+<!-- Profile update -->
+<form role="form" class="form-horizontal" action="" method="post" id="profileUpdate">{% csrf_token %}
+  {% bootstrap_form form layout='horizontal' %}
+  {% buttons submit='Save' layout='horizontal' %}{% endbuttons %}
+</form>
+
+<hr>
+
+<div class="row">
+  <label class="col-md-2 control-label align-right">Statuses</label>
+  <div class="col-md-10">
+
+    <!-- Contributor logic -->
+    {% if perms.core.contributor %}
+    <button type="button" class="btn btn-info" disabled="disabled">
+      <span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
+      <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+      You are a contributor (allows you to upload data and create projects).
+    </button>
+    {% elif perms.core.request_contributor %}
+    <button type="button" class="btn btn-info" disabled="disabled">
+      <span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
+      <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+      You have requested contributor status (allows you to upload data and create projects).
+    </button>
+    {% else %}
+    <a id="requestContributorStatusButton" href="#" type="button" class="btn btn-info" data-toggle="modal" data-target="#requestContributorStatus">
+    <span class="glyphicon glyphicon-upload" aria-hidden="true"></span> Request contributor status (allows you to upload data and create projects)</a>
+    {% endif %}
+
+    <br><br>
+
+    <!-- Trusted logic -->
+    {% if perms.core.trusted %}
+    <button type="button" class="btn btn-warning" disabled="disabled">
+      <span class="glyphicon glyphicon-lock" aria-hidden="true"></span>
+      <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+       You are a trusted user (allows you to view sensitive data).
+    </button>
+    {% elif perms.core.request_trusted %}
+    <button type="button" class="btn btn-warning" disabled="disabled">
+      <span class="glyphicon glyphicon-lock" aria-hidden="true"></span>
+      <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+      You have requested trusted status (allows you to view sensitive data).
+    </button>
+    {% else %}
+    <a id="requestTrustedStatusButton" href="#" type="button" class="btn btn-warning" data-toggle="modal" data-target="#requestTrustedStatus">
+    <span class="glyphicon glyphicon-lock" aria-hidden="true"></span> Request trusted status (allows you to view sensitive data)</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Contributor status modal -->
+<div class="modal fade" id="requestContributorStatus" tabindex="-1" role="dialog" aria-labelledby="contributorModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="contributorModalLabel"><span class="glyphicon glyphicon-upload" aria-hidden="true"></span> Request contributor status</h4>
+      </div>
+      <div class="modal-body">
+        Contributor status will allow you to upload datasets to projects and to create projects.
+        Once you submit this request, an administrator will submit your details to an independent panel, who will decide whether you will be granted this status.
+        This process can take up to 2 months. For urgent requests, or any questions, please send us an email.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <a href="{% url 'request_status' 'request_contributor' %}" class="btn btn-info"><span class="glyphicon glyphicon-upload" aria-hidden="true"></span> Request contributor status</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Trusted status modal -->
+<div class="modal fade" id="requestTrustedStatus" tabindex="-1" role="dialog" aria-labelledby="trustedModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="trustedModalLabel"><span class="glyphicon glyphicon-lock" aria-hidden="true"></span> Request trusted status</h4>
+      </div>
+      <div class="modal-body">
+        Trusted status will allow you to view sensitive data (data to do with species which are red-listed).
+        Once you submit this request, an administrator will submit your details to an independent panel, who will decide whether you will be granted this status.
+        This process can take up to 2 months. For urgent requests, or any questions, please send us an email.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <a href="{% url 'request_status' 'request_trusted' %}" class="btn btn-warning"><span class="glyphicon glyphicon-lock" aria-hidden="true"></span> Request trusted status</a>
+      </div>
+    </div>
+  </div>
+</div>
 {% endif %}
 {% endblock content %}

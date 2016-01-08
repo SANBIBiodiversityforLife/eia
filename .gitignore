@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -55,3 +56,8 @@ docs/_build/
 
 tmp
 tmp/*
+=======
+.DS_Store
+*~
+.codekit-config.json
+>>>>>>> 4dfeef6943d58bde2d8ea1213250f6e1aa49ef0f

@@ -4,7 +4,7 @@ from django.db import models
 #from django.core.exceptions import DoesNotExist
 from leaflet.forms.widgets import LeafletWidget
 from core.models import Project, PopulationData, Taxa, TaxaOrder, FocalSite, FocalSiteData, MetaData, Profile, \
-    Developer, EquipmentMake, User
+    Developer, EquipmentMake, User, RemovalFlag
 from core import validators
 from openpyxl import load_workbook
 #from django.contrib.staticfiles.templatetags.staticfiles import static
@@ -18,12 +18,10 @@ from core.spreadsheet_creation import population_data_spreadsheet_validation
 from django.contrib.auth import get_user_model
 
 
-'''class SignupForm(forms.Form):
-    first_name = forms.CharField(max_length=30, label='Voornaam')
-    last_name = forms.CharField(max_length=30, label='Achternaam')'''
-
-
 class SignupForm(forms.ModelForm):
+    first_name = forms.CharField(max_length=100)
+    last_name = forms.CharField(max_length=100)
+
     class Meta:
         model = Profile
         fields = ('first_name', 'last_name', 'phone', 'type')
@@ -41,6 +39,35 @@ class SignupForm(forms.ModelForm):
         profile.phone = self.cleaned_data['phone']
         profile.type = self.cleaned_data['type']
         profile.save()
+
+
+class ProfileUpdateForm(forms.ModelForm):
+    email = forms.EmailField()
+    first_name = forms.CharField(max_length=100)
+    last_name = forms.CharField(max_length=100)
+
+    class Meta:
+        model = Profile
+        fields = ('first_name', 'last_name', 'email', 'phone', 'type')
+
+    def __init__(self, *args, **kwargs):
+        super(ProfileUpdateForm, self).__init__(*args, **kwargs)
+        try:
+            self.fields['email'].initial = self.instance.user.email
+            self.fields['first_name'].initial = self.instance.user.first_name
+            self.fields['last_name'].initial = self.instance.user.last_name
+        except User.DoesNotExist:
+            pass
+
+    def save(self, *args, **kwargs):
+        """
+        Update the primary email address on the related User object as well.
+        """
+        u = self.instance.user
+        u.email = self.cleaned_data['email']
+        u.save()
+        profile = super(ProfileUpdateForm, self).save(*args,**kwargs)
+        return profile
 
 
 class ProjectCreateForm(forms.ModelForm):
@@ -65,8 +92,20 @@ class EquipmentMakeCreateForm(forms.ModelForm):
 class FocalSiteCreateForm(forms.ModelForm):
     class Meta:
         model = FocalSite
-        fields = ('name', 'location', 'project')
+        fields = ('location', 'name', 'order', 'sensitive', 'activity', 'habitat')
         widgets = {'location': LeafletWidget()}
+
+    def __init__(self, *args, **kwargs):
+        self.project_pk = kwargs.pop('project_pk')
+        self.uploader = kwargs.pop('uploader')
+        super(FocalSiteCreateForm, self).__init__(*args, **kwargs)
+
+    def clean(self):
+        # Create the metadata object and store it to get its primary key
+        # This must get deleted after this function if no actual data is stored
+        print("adding project to instance...")
+        cleaned_data = super(FocalSiteCreateForm, self).clean()
+        self.instance.project = Project.objects.get(pk=self.project_pk)
 
 
 class FocalSiteDataCreateForm(forms.ModelForm):
@@ -108,14 +147,29 @@ class ProjectDeleteForm(forms.ModelForm):
 class DataUploadForm(forms.Form):
     spreadsheet = forms.FileField()
 
+
+class DataViewForm(forms.Form):
+    datasets = forms.ChoiceField(label='Choose a dataset to view', choices=())
+
+    def __init__(self, *args, **kwargs):
+        metadata = kwargs.pop('metadata')
+        super(DataViewForm, self).__init__(*args, **kwargs)
+        self.fields['datasets'].choices = [(d.id, d) for d in metadata]
+
+
+class RemovalFlagCreateForm(forms.ModelForm):
+    class Meta:
+        model = RemovalFlag
+        fields = ('reason', 'requested_by', 'metadata')
+        widgets = {'requested_by': forms.HiddenInput(), 'metadata': forms.HiddenInput()}
+
 # Think we are not going to use this one as we don't actually want form fields here
-class PopulationDataCreateForm(forms.ModelForm):
+"""class PopulationDataCreateForm(forms.ModelForm):
     order = models.ForeignKey(TaxaOrder)
-    test = models.CharField(max_length=200)
 
     class Meta:
         model = PopulationData
-        fields = ('taxa', 'count', 'collision_risk', 'metadata', 'density_km', 'passage_rate')
+        fields = ('taxa', 'count', 'collision_risk', 'metadata', 'density_km', 'passage_rate')"""
 
 
 def write_error(main_sheet, row_number, error_message):

@@ -9,7 +9,14 @@
   {% if url_name == 'project_detail' %}<li class="active">{{ project.name }}</li>
     {% else %}
       <li><a href="{% url 'project_detail' project.id %}">{{ project.name }}</a></li>
-      <li class="active">{% if url_name == 'population_data' %}Population data{% endif %}
+      <li class="active">
+        {% if url_name == 'population_data' %}
+          Population data
+        {% elif url_name == 'focal_site_data' %}
+          Focal site data
+        {% elif url_name == 'fatality_data' %}
+          Fatality data
+        {% endif %}
       </li>
     {% endif %}
   {% endwith %}
