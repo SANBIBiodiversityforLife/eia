@@ -14,8 +14,9 @@ from django.contrib.staticfiles.templatetags.staticfiles import static
 import tempfile
 import os
 from django.conf import settings
-from core.spreadsheet_creation import population_data_spreadsheet_validation
+from core.spreadsheet_creation import add_focal_site_data_validation, add_population_data_validation
 from django.contrib.auth import get_user_model
+import time
 
 
 class SignupForm(forms.ModelForm):
@@ -108,12 +109,6 @@ class FocalSiteCreateForm(forms.ModelForm):
         self.instance.project = Project.objects.get(pk=self.project_pk)
 
 
-class FocalSiteDataCreateForm(forms.ModelForm):
-    class Meta:
-        model = FocalSiteData
-        fields = ('taxa', 'focal_site', 'count')
-
-
 class ProjectUpdateOperationalInfoForm(forms.ModelForm):
     class Meta:
         model = Project
@@ -163,25 +158,19 @@ class RemovalFlagCreateForm(forms.ModelForm):
         fields = ('reason', 'requested_by', 'metadata')
         widgets = {'requested_by': forms.HiddenInput(), 'metadata': forms.HiddenInput()}
 
-# Think we are not going to use this one as we don't actually want form fields here
-"""class PopulationDataCreateForm(forms.ModelForm):
-    order = models.ForeignKey(TaxaOrder)
-
-    class Meta:
-        model = PopulationData
-        fields = ('taxa', 'count', 'collision_risk', 'metadata', 'density_km', 'passage_rate')"""
-
 
 def write_error(main_sheet, row_number, error_message):
     main_sheet.cell(column=7, row=row_number, value=error_message)
     main_sheet.cell(column=7, row=row_number).style = Style(font=Font(color='FFFFFFFF'),
                                                             fill=PatternFill(patternType='solid', fgColor=Color('FFFF0000')))
 
+
 class MetaDataCreateForm(forms.ModelForm):
     upload_data = forms.FileField(
         label=mark_safe('Upload spreadsheet'),
         validators=[validators.validate_spreadsheet]
     )
+    number_of_cols = 10
 
     def __init__(self, *args, **kwargs):
         self.project_pk = kwargs.pop('project_pk')
@@ -198,56 +187,46 @@ class MetaDataCreateForm(forms.ModelForm):
             'collected_to': forms.TextInput(attrs={'class': 'datepicker'})
         }
 
+    # Gets overwritten
+    def create_data_object(self, metadata, taxa, cells):
+        raise ValidationError('Incorrectly calling the parent class')
+
+    # Gets overwritten
+    def add_data_validation(self, wb):
+        pass
+
+    # The main function which saves all of the different data objects
     def process_data(self):
-        print('processing data...')
+        start = time.clock()
         # Load the workbook from the file held in memory
         uploaded_data = load_workbook(self.files['upload_data'])
-        print('loaded workbook...')
-        # Delete the upload_data fields & file now they are in the openpyxl object
-        del self.fields['upload_data']
-        del self.files['upload_data']
+        print('loaded workbook - ' + str(time.clock() - start))
 
         # Get the correct sheet - TODO how are we going to stop them from renaming the sheet?
         main_sheet = uploaded_data.get_sheet_by_name("Main")
-        print('Retrieved worksheet...')
 
         # Create the metadata object and store it to get its primary key
         # This must get deleted after this function if no actual data is stored
-        print("adding project to instance...")
         self.instance.project = Project.objects.get(pk=self.project_pk)
         self.instance.uploader = self.uploader
-
-        # self.instance.request
-
-        print("saving project")
         self.instance.save()
-        print("project saved")
         metadata = self.instance
 
         # Keep track of the errors somehow
         row_with_error_count = 0
 
         # Keep track of all the population data objects - if we have no errors at the end we shall save them
-        population_data_list = []
+        data_object_list = []
 
         # Loop through the rows in the sheet
         for row in main_sheet.iter_rows(row_offset=1):
-            print('Looping through main sheet')
-
-            # Gather the data into sensible variable names
-            genus = row[0].value
-            species = row[1].value
-            count = row[2].value
-            collision_risk = row[3].value
-            density_km = row[4].value
-            passage_rate = row[5].value
-
             # If all of these are blank, (i.e., none have a value), then ignore this row
-            if not(genus or species or count or collision_risk or density_km or passage_rate):
+            cells = [x.value for x in row[0:self.number_of_cols]]
+            if not(any(cells)):
                 continue
 
             # If any of these are blank (i.e. any don't have a value), throw up an error and get them to fill it in
-            if not(genus and species and count and collision_risk and density_km and passage_rate):
+            if not(all(cells)):
                 write_error(main_sheet=main_sheet,
                             row_number=row[0].row,
                             error_message='Incomplete row. All the fields must be filled out.')
@@ -256,7 +235,7 @@ class MetaDataCreateForm(forms.ModelForm):
 
             # Try and retrieve the taxa based on genus + species
             try:
-                taxa = Taxa.objects.get(genus=genus, species=species)
+                taxa = Taxa.objects.get(genus=cells[0], species=cells[1])
             except Taxa.DoesNotExist:
                 write_error(main_sheet=main_sheet,
                             row_number=row[0].row,
@@ -264,22 +243,18 @@ class MetaDataCreateForm(forms.ModelForm):
                 row_with_error_count += 1
                 continue
 
-            # Try and create a population data object
+            # Try and save the data object (e.g. population data or whatever it is)
             try:
                 # Create a new object so we can run the validation on it
-                population_data = PopulationData(metadata=metadata,
-                                                 taxa=taxa,
-                                                 count=count,
-                                                 collision_risk=collision_risk,
-                                                 density_km=density_km,
-                                                 passage_rate=passage_rate)
+                data_object = self.create_data_object(metadata, taxa, cells)
 
                 # Call the validation on the object
-                population_data.full_clean()
+                data_object.full_clean()
 
                 # If it hasn't slipped into the except, add it to the main list
-                population_data_list.append(population_data)
+                data_object_list.append(data_object)
             except ValidationError as err:
+                # Write an error
                 write_error(main_sheet=main_sheet,
                             row_number=row[0].row,
                             error_message='Error when saving {}'.format(err))
@@ -292,16 +267,13 @@ class MetaDataCreateForm(forms.ModelForm):
             metadata.delete()
 
             # Add the validation
-            population_data_spreadsheet_validation(uploaded_data, main_sheet,
-                                                   uploaded_data.get_sheet_by_name("Valid Species"),
-                                                   uploaded_data.get_sheet_by_name("Valid Genera"))
+            self.add_data_validation(uploaded_data)
 
             # Unique filename and timestamp
-            # fd, unique_file = tempfile.mkstemp(suffix='.xlsx', prefix='pop_', dir=os.path.join(settings.BASE_DIR, 'tmp'))
             tmp_dir = os.path.join(settings.BASE_DIR, 'core', 'static', 'core', 'tmp')
-            print(tmp_dir)
-            fd, unique_file = tempfile.mkstemp(suffix='.xlsx', prefix='pop_', dir=tmp_dir)
-            # TODO the above is terrible and must be fixed, serve the files through a proper webserver
+            fd, unique_file = tempfile.mkstemp(suffix='.xlsx', prefix='data_', dir=tmp_dir)
+
+            # TODO serve the files through a proper webserver
             uploaded_data.save(unique_file)
             os.close(fd)
             print('Created error file, returning URL')
@@ -310,19 +282,43 @@ class MetaDataCreateForm(forms.ModelForm):
             return os.path.join('static', 'core', 'tmp', os.path.basename(os.path.relpath(unique_file)))
         else:
             print('No errors - saving data')
-            # Save all the population data
-            for population_data in population_data_list:
-                population_data.save()
+            # Save all the validated/cleaned data
+            for data_object in data_object_list:
+                data_object.save()
 
             # No errors, return
             return False
 
-        #import pdb; pdb.set_trace()
 
-        # Parse the file using
-'''
+class PopulationDataCreateForm(MetaDataCreateForm):
+    number_of_cols = 6
+
+    def create_data_object(self, metadata, taxa, cells):
+        return PopulationData(metadata=metadata,
+                              taxa=taxa,
+                              count=cells[2],
+                              collision_risk=cells[3],
+                              density_km=cells[4],
+                              passage_rate=cells[5])
+
+    def add_data_validation(self, wb):
+        add_population_data_validation(wb)
+
+
+class FocalSiteDataCreateForm(MetaDataCreateForm):
+    number_of_cols = 5
+
     def __init__(self, *args, **kwargs):
-        self.hello = kwargs.pop('initial', None)
-        super(PopulationDataCreateForm, self).__init__(*args, **kwargs)'''
+        self.focal_site_pk = kwargs.pop('focal_site_pk')
+        super(FocalSiteDataCreateForm, self).__init__(*args, **kwargs)
 
+    def create_data_object(self, metadata, taxa, cells):
+        return FocalSiteData(metadata=metadata,
+                             taxa=taxa,
+                             count=cells[2],
+                             life_stage=cells[3],
+                             activity=cells[4],
+                             focal_site=FocalSite.objects.get(pk=self.focal_site_pk))
 
+    def add_data_validation(self, wb):
+        add_focal_site_data_validation(wb)

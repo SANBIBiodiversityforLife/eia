@@ -191,3 +191,6 @@ MESSAGE_TAGS = {
             messages.WARNING: 'alert-warning warning',
             messages.ERROR: 'alert-danger error'
 }
+
+# My own spreadsheet creation methods need this
+MAX_XLSX_ROWS = 2000

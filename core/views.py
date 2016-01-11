@@ -12,7 +12,7 @@ from django.core.urlresolvers import reverse, reverse_lazy
 import tempfile
 import os
 from django.conf import settings
-from core.spreadsheet_creation import create_population_data_spreadsheet
+from core.spreadsheet_creation import create_population_data_spreadsheet, create_focal_site_data_spreadsheet
 from django.core.serializers import serialize
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
@@ -40,6 +40,9 @@ class AjaxableResponseMixinDataCreate(object):
         kwargs = super(AjaxableResponseMixinDataCreate, self).get_form_kwargs()
         kwargs['project_pk'] = self.kwargs['project_pk']
         kwargs['uploader'] = self.request.user
+
+        if self.kwargs['focal_site_pk']:
+            kwargs['focal_site_pk'] = self.kwargs['focal_site_pk']
         return kwargs
 
     # Pass the project as a whole to the template (so we can access name etc as well as pk
@@ -94,12 +97,13 @@ class ProfileUpdate(UpdateView):
 
 class PopulationDataCreateView(AjaxableResponseMixinDataCreate, FormView):
     template_name = 'core/populationdata_create_form.html'
-    form_class = forms.MetaDataCreateForm
+    form_class = forms.PopulationDataCreateForm
 
 
 class FocalSiteDataCreateView(AjaxableResponseMixinDataCreate, FormView):
     template_name = 'core/focalsitedata_create_form.html'
-    form_class = forms.MetaDataCreateForm
+    form_class = forms.FocalSiteDataCreateForm
+
 
 class FocalSiteCreate(CreateView):
     model = models.FocalSite
@@ -325,6 +329,10 @@ def dataset_display_helper(request, metadata_ids, metadata_pk, data_model, data_
 
 
 def population_data(request, pk, metadata_pk=None):
+
+    create_focal_site_data_spreadsheet(validation=False)
+    create_population_data_spreadsheet(validation=False)
+
     # The following is a bit long winded, but I can't think of any other way of doing it
     # Get a queryset of the data objects for this project and then the corresponding metadata ids
     relevant_population_data = models.PopulationData.objects.filter(metadata__project__pk=pk)

@@ -287,9 +287,6 @@ class MetaData(models.Model):
         self.full_clean()
         super(MetaData, self).save(*args, **kwargs)
 
-    class Meta:
-        unique_together = ('collected_to', 'collected_from', 'control_data')
-
     def is_post_construction(self):
         if self.project.construction_date:
             return self.collected_from > self.project.construction_date
