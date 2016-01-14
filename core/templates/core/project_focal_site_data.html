@@ -9,28 +9,16 @@
 
 {% block subheader %}focal site{% endblock subheader %}
 
-{% block subcontent %}
-<h3>
+{% block subcontent-heading %}
   Focal site locations, and count data associated with focal sites
   {% if perms.core.contributor %}
   <a href="{% url 'focal_site_create' project.id %}" type="button" class="btn btn-warning align-right">
     <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add focal site
   </a>
   {% endif %}
-</h3>
-{% if focal_site_locations %}
-  {% leaflet_map "main" callback="main_map_init" %}
-  {% if focal_site_metadata %}
-  <form id="select_focal_site_dataset">
-    <div class="form-group">
-      <label for="metadata">Choose a dataset to view: </label>
-      <select class="form-control" id="metadata">
-        {% for data in focal_site_metadata %}
-        <option>{{ data }}</option>
-        {% endfor %}
-      </select>
-    </div>
-  </form>
+{% endblock %}
+
+{% block table %}
   <table class="table table-striped">
     <thead>
       <tr>
@@ -41,30 +29,27 @@
       </tr>
     </thead>
     <tbody>
-    {% for data in focal_site_metadata %}
+    {% for data in data_set %}
       <tr>
         <td>{{ data.taxa }}</td>
         <td>{{ data.count }}</td>
-        <td>{{ data.life_stage }}</td>
-        <td>{{ data.activity }}</td>
+        <td>{{ data.get_life_stage_display }}</td>
+        <td>{{ data.get_activity_display }}</td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
-  <div class="alert alert-warning" role="alert">
-    <p>Does this dataset look incorrect? <a href="{% url 'population_data_create' project.id %}" type="button" class="btn btn-sm btn-danger">
-    <span class="glyphicon glyphicon-flag" aria-hidden="true"></span> Flag it for removal by an administrator
-    </a></p>
-  </div>
-  {% else %}
-  <p>No focal site data yet.</p>
-  {% endif %}
+{% endblock %}
+
+{% block subcontent %}
+{% if focal_site_locations %}
+  {% leaflet_map "main" callback="main_map_init" %}
 {% else %}
   <p>No focal sites yet.</p>
 {% endif %}
 {% endblock subcontent %}
 
-{% block js %}
+{% block sub-js %}
 <script type="text/javascript">
 function main_map_init(map, options) { // See http://blog.mathieu-leplatre.info/geodjango-maps-with-leaflet.html
     // Add the project polygon
@@ -92,27 +77,23 @@ function main_map_init(map, options) { // See http://blog.mathieu-leplatre.info/
       polygon_center = polygon.getBounds().getCenter();
       if (feature.properties && feature.properties.name) {
         html = '<strong>' + feature.properties.name + ' (' + feature.properties.order +' focal site)</strong><br>';
-        //html += '<br><strong>Approx centroid:</strong> ' + polygon_center.lat.toFixed(4) + ', ' + polygon_center.lng.toFixed(4);
-        html += '<br><strong>Centroid:</strong> ' + feature.properties.centroid[0].toFixed(4) + ', ' + feature.properties.centroid[1].toFixed(4);
+        html += '<br><strong>Centroid:</strong> ' + feature.properties.centroid[1].toFixed(4) + ', ' + feature.properties.centroid[0].toFixed(4);
         html += '<br><strong>Habitat:</strong> ' + feature.properties.habitat;
         html += '<br><strong>Activity:</strong> ' + feature.properties.activity;
-
-        /*var button_template = '<a href="#" type="button" class="btn"><span class="glyphicon" aria-hidden="true"></span> </a>';
-        var b = $(button_template);
-        b.addClass('btn-default');
-        b.attr('href', "{% url 'focal_site_data_create' project.id project.id %}");
-        $(b + ' .glyphicon').addClass('glyphicon-th');
-        b.text(' View test');
-        html += b.html();*/
-
         html += '<br><br>';
+
         if(feature.properties.has_data) {
-          html += '<a href="' + "{% url 'focal_site_data' project.id %}" + feature.properties.pk + '" type="button" class="btn btn-default">';
+          html += '<a href="' + feature.properties.data_view_url + '" type="button" class="btn btn-default">';
           html += '<span class="glyphicon glyphicon-th" aria-hidden="true"></span> View datasets</a>';
         }
-        html += ' <a href="' + "{% url 'focal_site_data_create' project.id project.id %}" + '" type="button" class="btn btn-default">';
+        html += ' <a href="' + feature.properties.data_upload_url + '" type="button" class="btn btn-default">';
         html += '<span class="glyphicon glyphicon-upload" aria-hidden="true"></span> Upload a dataset</a>';
         layer.bindPopup(html);
+
+        //if(feature.properties.pk == {{ focal_site_pk }}) {
+          //layer.openPopup();
+          //console.log(layer.openPopup());
+        //}
       }
     }
     var focal_site_style = {
@@ -121,10 +102,19 @@ function main_map_init(map, options) { // See http://blog.mathieu-leplatre.info/
     }
     var focal_site_polygons = new L.geoJson({% autoescape off %}{{ focal_site_locations }}{% endautoescape %},
                                             { style: focal_site_style, onEachFeature: onEachFeature });
-    focal_site_polygons.addTo(map);
+    focalSiteLayer = focal_site_polygons.addTo(map);
+
+    // Make sure that the marker is automatically open if it has been selected
+    {% if focal_site_pk %}
+    focalSiteLayer.eachLayer(function(marker) {
+        if (marker.feature.properties.pk == {{ focal_site_pk }}) {
+            marker.openPopup();
+        }
+    });
+    {% endif %}
     {% endif %}
 
     // Data points?
 }
 </script>
-{% endblock js %}
+{% endblock sub-js %}

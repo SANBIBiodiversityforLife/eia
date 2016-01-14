@@ -7,6 +7,9 @@
 {% leaflet_js plugins="forms,draw" %}
 {% leaflet_css plugins="forms,draw" %}
 <link href='{% static "datetimepicker/jquery.datetimepicker.css" %}' rel="stylesheet">
+<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'leaflet-awesome-markers/dist/leaflet.awesome-markers.css' %}">
+<script src="{% static 'leaflet-awesome-markers/dist/leaflet.awesome-markers.min.js' %}"></script>
 {% endblock css %}
 
 {% block breadcrumb %}
@@ -97,8 +100,8 @@
     });
 
     // Datepicker stuff
-    $('#id_operational_date').datetimepicker({ timepicker:false, format:'d/m/Y' });
-    $('#id_construction_date').datetimepicker({ timepicker:false, format:'d/m/Y' });
+    $('#id_operational_date').datetimepicker({ timepicker:false, format:'Y-m-d' });
+    $('#id_construction_date').datetimepicker({ timepicker:false, format:'Y-m-d' });
 
     // Equipment make form stuff
     add_equipment_make = $('#id_equipment_make').parent();

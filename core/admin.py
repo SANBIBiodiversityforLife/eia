@@ -115,6 +115,17 @@ class RemovalFlagAdmin(admin.ModelAdmin):
     l.remove('__str__')
     list_display = tuple(l)
     actions = admin.ModelAdmin.actions
+    actions.append('remove_dataset')
+
+    def remove_dataset(self, request, queryset):
+        # Retrieve a list of all of the unique metadatas associated with these removal flags
+        metadata_pks = queryset.order_by().values_list("metadata", flat=True).distinct()
+
+        # Delete the metadatas. This should cascade:
+        # RemovalFlag, PopulationData, FocalSiteData, FatalityData all have fks to metadata
+        # So all of these objects should be deleted
+        models.MetaData.objects.filter(pk__in=metadata_pks).delete()
+    remove_dataset.short_description = "Delete reported datasets (permanent)"
 
     def project(self, obj):
         url = reverse('project_detail', args=(obj.metadata.project.pk,))
@@ -131,20 +142,40 @@ class RemovalFlagAdmin(admin.ModelAdmin):
         return '<a href="%s">%s</a>' % (url, obj.requested_by)
     removal_requested_by.allow_tags = True
 
+    def _get_data_type(self, metadata):
+        if models.PopulationData.objects.filter(metadata=metadata).exists():
+            return 'population_data'
+        elif models.FatalityData.objects.filter(metadata=metadata).exists():
+            return 'fatality_data'
+        elif models.FocalSiteData.objects.filter(metadata=metadata).exists():
+            return 'focal_site_data'
+        else:
+            return False
+
     def data(self, obj):
         url = reverse('project_detail', args=(obj.metadata.project.pk,))
 
         # We need to work out what type of data it is
-        data = False
-        if models.PopulationData.objects.filter(metadata=obj.metadata).exists():
-            data = 'population_data'
-        elif models.FatalityData.objects.filter(metadata=obj.metadata).exists():
-            data = 'fatality_data'
-        elif models.FocalSiteData.objects.filter(metadata=obj.metadata).exists():
-            data = 'focal_site_data'
+        data = self._get_data_type(obj.metadata)
 
         # Return the correct URL
-        return '<a href="%s">%s</a>' % (reverse(data, args=(obj.metadata.project.pk, obj.metadata.pk)), obj.metadata)
+        return '%s | <a href="%s">%s</a>' % (data.replace('_', ' ').capitalize(),
+                                             reverse(data, args=(obj.metadata.project.pk, obj.metadata.pk)),
+                                             obj.metadata)
     data.allow_tags = True
 
 admin.site.register(models.RemovalFlag, RemovalFlagAdmin)
+
+
+class TaxaAdmin(admin.ModelAdmin):
+    list_display = admin.ModelAdmin.list_display + ('species', 'genus', 'order')
+
+    list_filter = ['order', 'genus']
+
+
+admin.site.register(models.Taxa, TaxaAdmin)
+
+
+    #create_focal_site_data_spreadsheet(validation=False)
+    #create_population_data_spreadsheet(validation=False)
+    #create_fatality_data_spreadsheet()

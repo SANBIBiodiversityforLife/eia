@@ -85,7 +85,7 @@ def create_template_spreadsheet(validation):
     # Set column widths
     ws.column_dimensions['A'].width = 20
     ws.column_dimensions['B'].width = 20
-    ws.column_dimensions['C'].width = 8
+    ws.column_dimensions['C'].width = 13
     ws.column_dimensions['D'].width = 13
     ws.column_dimensions['E'].width = 12
     ws.column_dimensions['F'].width = 12
@@ -154,6 +154,42 @@ def add_focal_site_data_validation(wb):
 
     # Activity
     dv = list_validation(models.FocalSiteData.activity_choices)
+    ws.add_data_validation(dv)
+    dv.ranges.append('E2:E' + str(settings.MAX_XLSX_ROWS))
+
+
+def add_fatality_data_validation(wb):
+    ws = wb.active
+
+    # Taxa
+    add_taxa_validation(wb)
+
+    # Latitude
+    latitude_dv = DataValidation(
+        type='decimal',
+        operator='between',
+        formula1=-35,
+        formula2=-21,
+        prompt='Please enter a negative number between -21 and -35.',
+        error='Invalid. Please enter a negative number between -21 and -35.'
+    )
+    ws.add_data_validation(latitude_dv)
+    latitude_dv.ranges.append('C1:C' + str(settings.MAX_XLSX_ROWS))
+
+    # Longitude
+    longitude_dv = DataValidation(
+        type='decimal',
+        operator='between',
+        formula1=16,
+        formula2=33,
+        prompt='Please enter a number between 16 and 31.',
+        error='Invalid. Please enter a number between 16 and 31.'
+    )
+    ws.add_data_validation(longitude_dv)
+    longitude_dv.ranges.append('D1:D' + str(settings.MAX_XLSX_ROWS))
+
+    # Cause of death
+    dv = list_validation(models.FatalityData.cause_of_death_choices)
     ws.add_data_validation(dv)
     dv.ranges.append('E2:E' + str(settings.MAX_XLSX_ROWS))
 
@@ -232,3 +268,22 @@ def create_focal_site_data_spreadsheet(validation=True):
         wb.save('core' + static('focal_site_data_for_upload.xlsx'))
     else:
         wb.save('core' + static('focal_site_data_no_validation.xlsx'))
+
+
+def create_fatality_data_spreadsheet(validation=True):
+    wb = create_template_spreadsheet(validation)
+    ws = wb.active
+
+    # Add the additional fields, A and B are always species + genus
+    ws['C1'] = 'latitude'
+    ws['D1'] = 'longitude'
+    ws['E1'] = 'cause_of_death'
+
+    # Add the validation
+    if validation:
+        add_fatality_data_validation(wb)
+
+        # Close & save
+        wb.save('core' + static('fatality_data_for_upload.xlsx'))
+    else:
+        wb.save('core' + static('fatality_data_no_validation.xlsx'))

@@ -4,7 +4,7 @@ from django.db import models
 #from django.core.exceptions import DoesNotExist
 from leaflet.forms.widgets import LeafletWidget
 from core.models import Project, PopulationData, Taxa, TaxaOrder, FocalSite, FocalSiteData, MetaData, Profile, \
-    Developer, EquipmentMake, User, RemovalFlag
+    Developer, EquipmentMake, User, RemovalFlag, FatalityData
 from core import validators
 from openpyxl import load_workbook
 #from django.contrib.staticfiles.templatetags.staticfiles import static
@@ -13,10 +13,12 @@ from django.core.exceptions import ValidationError
 from django.contrib.staticfiles.templatetags.staticfiles import static
 import tempfile
 import os
+import posixpath
 from django.conf import settings
-from core.spreadsheet_creation import add_focal_site_data_validation, add_population_data_validation
+from core.spreadsheet_creation import add_focal_site_data_validation, add_population_data_validation, add_fatality_data_validation
 from django.contrib.auth import get_user_model
 import time
+from django.contrib.gis.geos import Point
 
 
 class SignupForm(forms.ModelForm):
@@ -193,7 +195,7 @@ class MetaDataCreateForm(forms.ModelForm):
 
     # Gets overwritten
     def add_data_validation(self, wb):
-        pass
+        raise ValidationError('Incorrectly calling the parent class')
 
     # The main function which saves all of the different data objects
     def process_data(self):
@@ -235,7 +237,7 @@ class MetaDataCreateForm(forms.ModelForm):
 
             # Try and retrieve the taxa based on genus + species
             try:
-                taxa = Taxa.objects.get(genus=cells[0], species=cells[1])
+                taxa = Taxa.objects.get(genus__iexact=cells[0], species__iexact=cells[1])
             except Taxa.DoesNotExist:
                 write_error(main_sheet=main_sheet,
                             row_number=row[0].row,
@@ -253,6 +255,12 @@ class MetaDataCreateForm(forms.ModelForm):
 
                 # If it hasn't slipped into the except, add it to the main list
                 data_object_list.append(data_object)
+
+                # Remove any validation left over from a previous upload
+                main_sheet.cell(column=7, row=row[0].row, value='')
+                main_sheet.cell(column=7, row=row[0].row).style = Style(font=Font(color='00000000'),
+                                                                        fill=PatternFill(patternType='solid', fgColor=Color('FFFFFF00')))
+
             except ValidationError as err:
                 # Write an error
                 write_error(main_sheet=main_sheet,
@@ -267,10 +275,12 @@ class MetaDataCreateForm(forms.ModelForm):
             metadata.delete()
 
             # Add the validation
+            print('Adding validation')
             self.add_data_validation(uploaded_data)
+            print('/Adding validation')
 
-            # Unique filename and timestamp
-            tmp_dir = os.path.join(settings.BASE_DIR, 'core', 'static', 'core', 'tmp')
+            # Unique filename and timestamp - used os.path.join but need linux paths for absolute urls
+            tmp_dir = posixpath.join(settings.BASE_DIR, 'core', 'static', 'core', 'tmp')
             fd, unique_file = tempfile.mkstemp(suffix='.xlsx', prefix='data_', dir=tmp_dir)
 
             # TODO serve the files through a proper webserver
@@ -278,8 +288,8 @@ class MetaDataCreateForm(forms.ModelForm):
             os.close(fd)
             print('Created error file, returning URL')
 
-            # Send back the file url
-            return os.path.join('static', 'core', 'tmp', os.path.basename(os.path.relpath(unique_file)))
+            # Send back the absolute file url
+            return posixpath.join(posixpath.sep, 'static', 'core', 'tmp', os.path.basename(os.path.relpath(unique_file)))
         else:
             print('No errors - saving data')
             # Save all the validated/cleaned data
@@ -322,3 +332,16 @@ class FocalSiteDataCreateForm(MetaDataCreateForm):
 
     def add_data_validation(self, wb):
         add_focal_site_data_validation(wb)
+
+
+class FatalityDataCreateForm(MetaDataCreateForm):
+    number_of_cols = 5
+
+    def create_data_object(self, metadata, taxa, cells):
+        return FatalityData(metadata=metadata,
+                            taxa=taxa,
+                            coordinates=Point(cells[3], cells[2]),
+                            cause_of_death=cells[4])
+
+    def add_data_validation(self, wb):
+        add_fatality_data_validation(wb)

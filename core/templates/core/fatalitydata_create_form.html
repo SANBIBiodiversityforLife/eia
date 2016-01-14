@@ -1,0 +1,6 @@
+{% extends "core/_base_dataset_create_form.html" %}
+{% load static %}
+
+{% block parent-link %}<a href="{% url 'fatality_data' project.id %}">Fatality data</a>{% endblock %}
+{% block breadcrumb-text %}{% block header-detail-text %}fatality site{% endblock %}{% endblock %}
+{% block file-url %}{% static "fatality_data_for_upload.xlsx" %}{% endblock %}

@@ -28,6 +28,7 @@ class Profile(models.Model):
     def get_absolute_url(self):
         return reverse('profile_detail')
 
+
 class Developer(models.Model):
     """The companies who run the projects."""
     name = models.CharField(max_length=100, unique=True)
@@ -98,8 +99,15 @@ class Project(models.Model):
     def popup_content(self):
         return self.name + ' ' + self.developer
 
-    #def clean(self):
-    #    import pdb; pdb.set_trace()
+    def clean(self):
+        # Coordinate cannot be outside the bounds of the project
+        if self.turbine_locations:
+            if not self.location.contains(self.turbine_locations):
+                raise ValidationError({'turbine_locations': 'Turbine locations must be within the project bounds.'})
+        elif self.solar_panel_locations:
+            if not self.location.contains(self.solar_panel_locations):
+                raise ValidationError({'solar_panel_locations': 'Solar panel locations must be within the project bounds.'})
+
 
     class Meta:
         permissions = (
@@ -200,6 +208,9 @@ class Taxa(models.Model):
     def __str__(self):
         return self.genus + ' ' + self.species
 
+    def natural_key(self):
+        return str(self)
+
 
 class FocalSite(models.Model):
     """
@@ -260,8 +271,10 @@ class FocalSite(models.Model):
     def get_absolute_url(self):
         return reverse('focal_site_data', kwargs={'pk': self.project.pk})
 
-    def get_location_coords(self):
-        return 'asdfff'
+    def clean(self):
+        # Coordinate cannot be outside the bounds of the project
+        if not self.project.location.contains(self.location):
+            raise ValidationError({'location': 'Focal sites must be within the project bounds.'})
 
 class MetaData(models.Model):
     """
@@ -289,7 +302,7 @@ class MetaData(models.Model):
 
     def is_post_construction(self):
         if self.project.construction_date:
-            return self.collected_from > self.project.construction_date
+            return self.collected_from.date() > self.project.construction_date
         else:
             # There is no construction date up yet
             return False
@@ -378,7 +391,7 @@ class FatalityData(models.Model):
     """
     metadata = models.ForeignKey(MetaData)
     taxa = models.ForeignKey(Taxa)
-    coordinate = models.PointField()
+    coordinates = models.PointField()
     objects = models.GeoManager()
 
     cause_of_death_choices = (
@@ -391,6 +404,11 @@ class FatalityData(models.Model):
         ('U', 'Undetermined')
     )
     cause_of_death = models.CharField(max_length=1, choices=cause_of_death_choices)
+
+    def clean(self):
+        # Coordinate cannot be outside the bounds of the project
+        if not self.metadata.project.location.contains(self.coordinates):
+            raise ValidationError({'coordinates': 'Fatality coordinates are outside the project polygon bounds.'})
 
 
 class RemovalFlag(models.Model):

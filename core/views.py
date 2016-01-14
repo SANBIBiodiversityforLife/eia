@@ -12,7 +12,7 @@ from django.core.urlresolvers import reverse, reverse_lazy
 import tempfile
 import os
 from django.conf import settings
-from core.spreadsheet_creation import create_population_data_spreadsheet, create_focal_site_data_spreadsheet
+from core.spreadsheet_creation import create_population_data_spreadsheet, create_focal_site_data_spreadsheet, create_fatality_data_spreadsheet
 from django.core.serializers import serialize
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
@@ -20,7 +20,7 @@ from django.contrib.auth.models import Group
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 
-from core.serializers import CustomGeoJSONSerializer
+from core.serializers import CustomGeoJSONSerializer, FocalSiteJSONSerializer
 
 def index(request):
     return render(request, 'core/index.html', {'stats': 'hello'})
@@ -41,7 +41,7 @@ class AjaxableResponseMixinDataCreate(object):
         kwargs['project_pk'] = self.kwargs['project_pk']
         kwargs['uploader'] = self.request.user
 
-        if self.kwargs['focal_site_pk']:
+        if 'focal_site_pk' in self.kwargs:
             kwargs['focal_site_pk'] = self.kwargs['focal_site_pk']
         return kwargs
 
@@ -62,12 +62,6 @@ class AjaxableResponseMixinDataCreate(object):
     def form_valid(self, form):
         # A custom function which should be present in all data adding forms - note self.kwargs['project_pk']
         xlsx_with_errors = form.process_data()
-
-        # We make sure to call the parent's form_valid() method because
-        # it might do some processing (in the case of CreateView, it will
-        # call form.save() for example).
-        # response = super(AjaxableResponseMixin, self).form_valid(form)
-        # removed the above as I don't think i need it for my custom function
 
         if self.request.is_ajax():
             print('returning data')
@@ -103,6 +97,11 @@ class PopulationDataCreateView(AjaxableResponseMixinDataCreate, FormView):
 class FocalSiteDataCreateView(AjaxableResponseMixinDataCreate, FormView):
     template_name = 'core/focalsitedata_create_form.html'
     form_class = forms.FocalSiteDataCreateForm
+
+
+class FatalityDataCreateView(AjaxableResponseMixinDataCreate, FormView):
+    template_name = 'core/fatalitydata_create_form.html'
+    form_class = forms.FatalityDataCreateForm
 
 
 class FocalSiteCreate(CreateView):
@@ -297,7 +296,8 @@ def dataset_display_helper(request, metadata_ids, metadata_pk, data_model, data_
     # Retrieve the metadata objects
     metadata = models.MetaData.objects.filter(id__in=metadata_ids)
 
-    # If we have post data this takes precedence over the metadata_pk passed in as an arg (comes through admin panel)
+    # If we have post data from the metadata select form...
+    # this takes precedence over the metadata_pk passed in as an arg (comes through admin panel)
     if request.method == 'POST':
         # We want to display the data belonging to the requested metadata
         metadata_for_display = request.POST['datasets']
@@ -329,14 +329,10 @@ def dataset_display_helper(request, metadata_ids, metadata_pk, data_model, data_
 
 
 def population_data(request, pk, metadata_pk=None):
-
-    create_focal_site_data_spreadsheet(validation=False)
-    create_population_data_spreadsheet(validation=False)
-
     # The following is a bit long winded, but I can't think of any other way of doing it
     # Get a queryset of the data objects for this project and then the corresponding metadata ids
-    relevant_population_data = models.PopulationData.objects.filter(metadata__project__pk=pk)
-    metadata_ids = relevant_population_data.values_list('metadata', flat=True).distinct()
+    relevant_data = models.PopulationData.objects.filter(metadata__project__pk=pk)
+    metadata_ids = relevant_data.values_list('metadata', flat=True).distinct()
 
     # If we have any metadata for this project, retrieve the corresponding data objects
     if metadata_ids:
@@ -367,7 +363,7 @@ def get_focal_site_locations(user, pk):
     if focal_sites:
         # Get the focal site location geojson. Note we are using our own geojson serializer for this to get the display name
         fields = ('location', 'activity', 'name', 'order', 'habitat', 'id')
-        return CustomGeoJSONSerializer().serialize(focal_sites, geometry_field='location', fields=fields,
+        return FocalSiteJSONSerializer().serialize(focal_sites, geometry_field='location', fields=fields,
                                                    use_natural_foreign_keys=True, use_natural_primary_keys=True)
     else:
         return False
@@ -380,8 +376,8 @@ def focal_site_data(request, pk, focal_site_pk=None, metadata_pk=None):
     # If the user has selected a particular focal site they must be able to select different metadata
     if focal_site_pk:
         # Get a queryset of the data objects for this project AND this focal site and then the corresponding metadata ids
-        relevant_focal_site_data = models.FocalSiteData.objects.filter(metadata__project__pk=pk, focal_site__pk=focal_site_pk)
-        metadata_ids = relevant_focal_site_data.values_list('metadata', flat=True).distinct()
+        relevant_data = models.FocalSiteData.objects.filter(metadata__project__pk=pk, focal_site__pk=focal_site_pk)
+        metadata_ids = relevant_data.values_list('metadata', flat=True).distinct()
 
         if metadata_ids:
             # Populates form, flag_for_removal form and data_set
@@ -390,6 +386,9 @@ def focal_site_data(request, pk, focal_site_pk=None, metadata_pk=None):
                                                    metadata_pk=metadata_pk,
                                                    data_model=models.FocalSiteData.objects,
                                                    data_form=forms.DataViewForm)
+
+        # We need to know which one has been selected for the map
+        response_data['focal_site_pk'] = focal_site_pk
 
     response_data['focal_site_locations'] = get_focal_site_locations(request.user, pk)
 
@@ -402,6 +401,51 @@ def focal_site_data(request, pk, focal_site_pk=None, metadata_pk=None):
 
     # Render the context
     return render_to_response('core/project_focal_site_data.html',
+                              response_data,
+                              RequestContext(request))
+
+
+def fatality_data(request, pk, metadata_pk=None):
+    # The following is a bit long winded, but I can't think of any other way of doing it
+    # Get a queryset of the data objects for this project and then the corresponding metadata ids
+    relevant_data = models.FatalityData.objects.filter(metadata__project__pk=pk)
+    metadata_ids = relevant_data.values_list('metadata', flat=True).distinct()
+
+    # Get the project location geojson
+    project = models.Project.objects.filter(pk=pk)
+
+    # If we have any metadata for this project, retrieve the corresponding data objects
+    if metadata_ids:
+        response_data = dataset_display_helper(request=request,
+                                               metadata_ids=metadata_ids,
+                                               metadata_pk=metadata_pk,
+                                               data_model=models.FatalityData.objects,
+                                               data_form=forms.DataViewForm)
+
+        # Add some mapping data
+        # Do we need some kind of permissions thing here? Does it matter if dead sensitive species are shown?
+        # if request.user.has_perm('core.trusted'):
+        response_data['fatality_locations'] = \
+            CustomGeoJSONSerializer().serialize(response_data['data_set'],
+                                                geometry_field='coordinates',
+                                                fields=('coordinates', 'taxa', 'cause_of_death'),
+                                                use_natural_foreign_keys=True,
+                                                use_natural_primary_keys=True)
+
+        # Add the project polygon and turbine locations
+        response_data['project_location'] = serialize('geojson', project, geometry_field='location', fields=('location',))
+        response_data['turbine_locations'] = serialize('geojson',
+                                                       project,
+                                                       geometry_field='turbine_locations',
+                                                       fields=('turbine_locations',))
+    else:
+        response_data = {}
+
+    # Add the project object to the response data
+    response_data['project'] = project[0]
+
+    # Render the context
+    return render_to_response('core/project_fatality_data.html',
                               response_data,
                               RequestContext(request))
 

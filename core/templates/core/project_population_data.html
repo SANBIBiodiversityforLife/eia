@@ -1,30 +1,15 @@
 {% extends "core/base_project_detail.html" %}
-{% load leaflet_tags %}
-{% load bootstrap3 %}
-{% load static %}
-
-{% block css %}
-{% leaflet_js %}
-{% leaflet_css %}
-{% endblock css %}
 
 {% block subheader %}details{% endblock subheader %}
 
-{% block subcontent %}
-<!-- Subheading -->
-<h3>
+{% block subcontent-heading %}
   Species population count, census and estimate data
   {% if perms.core.contributor %}<a href="{% url 'population_data_create' project.id %}" type="button" class="btn btn-info pull-right">
   <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add population data
   </a>{% endif %}
-</h3>
+{% endblock %}
 
-{% if data_set %}
-  <!-- Population select form -->
-  <form id="selectDataset" method="post">{% csrf_token %}
-    {% bootstrap_form form %}
-  </form>
-
+{% block table %}
   <!-- Population data table -->
   <table class="table table-striped">
     <thead>
@@ -48,62 +33,6 @@
     {% endfor %}
     </tbody>
   </table>
+{% endblock %}
 
-  <!-- Flag dataset alert -->
-  <div class="alert alert-warning" role="alert">
-    <p>
-      Does this dataset look incorrect?
-      <a id="flagDataset" href="#" type="button"
-         class="btn btn-sm btn-danger"  data-toggle="modal" data-target="#flagModal">
-        <span class="glyphicon glyphicon-flag" aria-hidden="true"></span> Flag it for removal by an administrator
-      </a>
-    </p>
-  </div>
-
-  <!-- Modal -->
-  <div class="modal fade" id="flagModal" tabindex="-1" role="dialog" aria-labelledby="flagModalLabel">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title" id="flagModalLabel">Flag dataset for removal</h4>
-        </div>
-        <form id="flagForRemoval" method="post" action="{% url 'flag_for_removal' project.pk %}">{% csrf_token %}
-          <div class="modal-body">
-            <p>Why should this dataset be removed?</p>
-            {% bootstrap_form flag_for_removal_form %}
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            <input type="submit" class="btn btn-danger" id="flagForRemovalButton" value="Flag for removal">
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-{% else %}
-<p>No population data has been uploaded yet.</p>
-{% endif %}
-{% endblock subcontent %}
-
-{% block js %}
-<script src='{% static "core/js/jquery.form.min.js" %}'></script>
-<script type="text/javascript">
-  $(document).ready(function() {
-    $('#id_datasets').change(function() {
-      $('form#selectDataset').submit();
-    });
-
-    // Ajax the form
-    var options = {
-        dataType: 'json',
-        success: function(data) {
-            // Change the header
-            $('#flagForRemoval .modal-body').html('Dataset has been flagged for removal with an administrator.');
-            $('#flagForRemovalButton').hide();
-        }
-    }
-    $('#flagForRemoval').ajaxForm(options);
-  });
-</script>
-{% endblock js %}
+{% block no-data-message %}No data uploaded yet.{% endblock %}

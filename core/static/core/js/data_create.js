@@ -56,7 +56,7 @@ $(document).ready(function() {
 
             // If there's any spreadsheet errors then show them, otherwise redirect to project page
             if(data['error_sheet'] != 0) {
-                $('#spreadsheet-errors').attr('href', '/' + data['error_sheet']);
+                $('#spreadsheet-errors').attr('href', data['error_sheet']);
                 $('#modalMessageFailure').fadeIn();
             } else {
                 $('#modalMessageSuccess').fadeIn();
