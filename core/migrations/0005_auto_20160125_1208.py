@@ -7,13 +7,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0011_auto_20151209_1432'),
+        ('core', '0004_taxon_vernacular_name'),
     ]
 
     operations = [
-        migrations.RenameField(
-            model_name='project',
-            old_name='operation_date',
-            new_name='operational_date',
+        migrations.AlterField(
+            model_name='taxon',
+            name='name',
+            field=models.CharField(max_length=100),
         ),
     ]

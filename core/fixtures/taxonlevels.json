@@ -1,0 +1,58 @@
+[
+  {
+    "model": "core.taxonleveldefinitions",
+    "pk": 1,
+    "fields": {
+      "name": "Kingdom",
+      "depth": 6
+    }
+  },
+  {
+    "model": "core.taxonleveldefinitions",
+    "pk": 2,
+    "fields": {
+      "name": "Phylum",
+      "depth": 5
+    }
+  },
+  {
+    "model": "core.taxonleveldefinitions",
+    "pk": 3,
+    "fields": {
+      "name": "Class",
+      "depth": 4
+    }
+  },
+  {
+    "model": "core.taxonleveldefinitions",
+    "pk": 4,
+    "fields": {
+      "name": "Order",
+      "depth": 3
+    }
+  },
+  {
+    "model": "core.taxonleveldefinitions",
+    "pk": 5,
+    "fields": {
+      "name": "Family",
+      "depth": 2
+    }
+  },
+  {
+    "model": "core.taxonleveldefinitions",
+    "pk": 6,
+    "fields": {
+      "name": "Genus",
+      "depth": 1
+    }
+  },
+  {
+    "model": "core.taxonleveldefinitions",
+    "pk": 7,
+    "fields": {
+      "name": "Species",
+      "depth": -6
+    }
+  },
+]

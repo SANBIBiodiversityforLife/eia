@@ -1,92 +1,22 @@
-{% extends "core/_base.html" %}
-{% load leaflet_tags %}
-{% load bootstrap3 %}
-{% load static %}
+{% extends "core/_base_project_cru_form.html" %}
 
-{% block css %}
-{% leaflet_js plugins="forms,draw" %}
-{% leaflet_css plugins="forms,draw" %}
-<link href='{% static "datetimepicker/jquery.datetimepicker.css" %}' rel="stylesheet">
-{% endblock css %}
-
-{% block breadcrumb %}
-<ol class="breadcrumb">
-  <li><a href="#">Home</a></li>
-  <li><a href="{% url 'projects_list' %}">Projects</a></li>
-  <li><a href="{% url 'project_detail' project.pk %}">{{ project.name }}</a></li>
-  <li class="active">Edit project</li>
-</ol>
-{% endblock breadcrumb %}
+{% block sub-breadcrumb %}
+<li><a href="{% url 'project_detail' project.pk %}">{{ project.name }}</a></li>
+<li class="active">Edit project</li>
+{% endblock %}
 
 {% block header-text %}Edit project details{% endblock header-text %}
 
-{% block content %}
+{% block sub-nav %}
 <div class="row"><div class="col-md-10 col-md-offset-2">
 <ul class="nav nav-pills">
   <li role="presentation"><a href="{% url 'project_update_operational_info' project.pk %}">Operational info</a></li>
   <li role="presentation" class="active"><a href="{% url 'project_update' project.pk %}">Project details</a></li>
+  <li role="presentation"><a href="{% url 'project_detail' project.pk %}">Project data
+    <span class="glyphicon glyphicon-new-window" aria-hidden="true"></span></a></li>
 </ul></div></div>
+{% endblock %}
 
-<form role="form" class="form-horizontal" action="" method="post" id="projectUpdate">{% csrf_token %}
-  <div id="operationalForm">
-  {% bootstrap_form form layout='horizontal' %}
-  </div>
-  {% buttons submit='Save' layout='horizontal' %}<a href="{% url 'project_detail' project.pk %}" type="button" class="btn btn-danger pull-right">Cancel</a>{% endbuttons %}
-</form>
-
-<!-- Modal -->
-<div class="modal fade" id="developerModal" tabindex="-1" role="dialog" aria-labelledby="developerModalLabel">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="developerModalLabel">Add a developer</h4>
-      </div>
-      <form role="form" class="form-horizontal" action="{% url 'developer_create' %}" method="post" id="developerForm">{% csrf_token %}
-        <div class="modal-body">
-          {% bootstrap_form developer_form layout='horizontal' %}
-        </div>
-        <div class="modal-footer">
-          {% buttons submit='Save' layout='horizontal' %}
-          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-          {% endbuttons %}
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-{% endblock content %}
-
-{% block js %}
-<script src='{% static "core/js/jquery.form.min.js" %}'></script>
-<script src='{% static "core/js/validator.min.js" %}'></script>
-<script src='{% static "datetimepicker/jquery.datetimepicker.js" %}'></script>
-<script language="javascript">
-  $(document).ready(function() {
-    // Datepicker stuff
-    $('#id_operational_date').datetimepicker({ timepicker:false, format:'Y-m-d' });
-    $('#id_construction_date').datetimepicker({ timepicker:false, format:'Y-m-d' });
-
-    // Developer form stuff
-    add_developer = $('#id_developer').parent();
-    var add_developer_text = '<div class="col-md-4" style="padding-top: 7px">Developer not in the list? <a data-toggle="modal" data-target="#developerModal" class="" href="#" role="button">Add a developer</a></div>';
-    add_developer.parent().append(add_developer_text);
-
-    // Ajax the form
-    var options = {
-        dataType: 'json',
-        success: function(data) {
-            // Change the header
-            $('h4#developerModalLabel').html('Data successfully uploaded');
-            $('#id_developer').append($('<option>', {
-                value: data.pk,
-                text: data.name,
-                selected: "selected"
-            }));
-            $('#developerModal').modal('hide');
-        }
-    }
-    $('#developerForm').ajaxForm(options);
-  })
-</script>
+{% block form-buttons %}
+<a href="{% url 'project_detail' project.pk %}" type="button" class="btn btn-danger pull-right">Cancel</a>
 {% endblock %}

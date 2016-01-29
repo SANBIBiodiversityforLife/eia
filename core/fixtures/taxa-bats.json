@@ -1,0 +1,89 @@
+[
+  {
+    "model": "core.taxon",
+    "pk": 734,
+    "fields": {
+      "updated": "2016-01-22 00:00:00",
+      "name": "Chiroptera",
+      "is_root": 1, 
+      "rank": "OR"
+    }
+  },
+  {
+    "model": "core.taxon",
+    "pk": 5448,
+    "parent_id": 734,
+    "fields": {
+      "updated": "2016-01-22 00:00:00",
+      "name": "Nycteridae",
+      "is_root": 1, 
+      "rank": "FA"
+    }
+  },
+  {
+    "model": "core.taxon",
+    "pk": 5449,
+    "parent_id": 734,
+    "fields": {
+      "updated": "2016-01-22 00:00:00",
+      "name": "Rhinolophidae",
+      "is_root": 1, 
+      "rank": "FA"
+    }
+  },
+  {
+    "model": "core.taxon",
+    "pk": 3239753,
+    "parent_id": 734,
+    "fields": {
+      "updated": "2016-01-22 00:00:00",
+      "name": "Hipposideridae",
+      "is_root": 1, 
+      "rank": "FA"
+    }
+  },
+  {
+    "model": "core.taxon",
+    "pk": 9368,
+    "parent_id": 734,
+    "fields": {
+      "updated": "2016-01-22 00:00:00",
+      "name": "Vespertilionidae",
+      "is_root": 1, 
+      "rank": "FA"
+    }
+  },
+  {
+    "model": "core.taxon",
+    "pk": 5719,
+    "parent_id": 734,
+    "fields": {
+      "updated": "2016-01-22 00:00:00",
+      "name": "Molossidae",
+      "is_root": 1, 
+      "rank": "FA"
+    }
+  },
+  {
+    "model": "core.taxon",
+    "pk": 9615,
+    "parent_id": 734,
+    "fields": {
+      "updated": "2016-01-22 00:00:00",
+      "name": "Emballonuridae",
+      "is_root": 1, 
+      "rank": "FA"
+    }
+  },
+  {
+    "model": "core.taxon",
+    "pk": 9367,
+    "parent_id": 734,
+    "fields": {
+      "updated": "2016-01-22 00:00:00",
+      "name": "Pteropodidae",
+      "is_root": 1, 
+      "rank": "FA"
+    }
+  }
+]

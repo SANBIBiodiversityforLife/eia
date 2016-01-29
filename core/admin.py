@@ -4,6 +4,9 @@ from django.contrib.auth.models import User, Group
 from core import models
 from django.core.urlresolvers import reverse
 from django.db.models.base import ObjectDoesNotExist
+import requests
+from mptt.admin import MPTTModelAdmin
+from django.conf import settings
 
 class MyUserAdmin(UserAdmin):
     l = list(UserAdmin.list_filter)
@@ -105,6 +108,9 @@ class MyUserAdmin(UserAdmin):
 admin.site.unregister(User)
 admin.site.register(User, MyUserAdmin)
 
+# Projects
+admin.site.register(models.Project, admin.ModelAdmin)
+
 # Adminsite customisation
 admin.site.site_header = "Administration"
 
@@ -167,15 +173,6 @@ class RemovalFlagAdmin(admin.ModelAdmin):
 admin.site.register(models.RemovalFlag, RemovalFlagAdmin)
 
 
-class TaxaAdmin(admin.ModelAdmin):
-    list_display = admin.ModelAdmin.list_display + ('species', 'genus', 'order')
-
-    list_filter = ['order', 'genus']
+admin.site.register(models.Taxon, MPTTModelAdmin)
 
 
-admin.site.register(models.Taxa, TaxaAdmin)
-
-
-    #create_focal_site_data_spreadsheet(validation=False)
-    #create_population_data_spreadsheet(validation=False)
-    #create_fatality_data_spreadsheet()

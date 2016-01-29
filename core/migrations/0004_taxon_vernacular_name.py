@@ -7,14 +7,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0002_auto_20151028_1611'),
+        ('core', '0003_auto_20160122_1052'),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='metadata',
-            name='project',
-            field=models.ForeignKey(to='core.Project', default=1),
-            preserve_default=False,
+            model_name='taxon',
+            name='vernacular_name',
+            field=models.CharField(blank=True, max_length=100, null=True),
         ),
     ]

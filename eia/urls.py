@@ -15,13 +15,12 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
-from core import views
+from core import views, spreadsheet_creation
 from django.contrib.auth.decorators import login_required
 
 urlpatterns = [
     # Django allauth
     url(r'^accounts/', include('allauth.urls')),
-    #url(r'^accounts/profile/', login_required(views.ProfileDetail.as_view()), name='profile_detail'),
     url(r'^accounts/profile/$', login_required(views.TemplateView.as_view(template_name='account/profile.html')), name='profile_detail'),
     url(r'^accounts/profile/(?P<pk>[0-9]+)$', login_required(views.TemplateView.as_view(template_name='account/profile.html')), name='profile_detail'),
     url(r'^accounts/profile/edit$', login_required(views.ProfileUpdate.as_view()), name='profile_update'),
@@ -29,6 +28,7 @@ urlpatterns = [
 
     # Admin section
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin/reset_taxonomy/$', login_required(spreadsheet_creation.reset_taxa_tree), name='admin_reset_taxa_tree'),
 
     # Front page
     url(r'^$', views.index, name='index'),

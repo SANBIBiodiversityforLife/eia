@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User, Group
 from core.multiple_select_field import MultipleSelectField
 from django.utils import formats
-
+from mptt.models import MPTTModel, TreeForeignKey
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -108,7 +108,6 @@ class Project(models.Model):
             if not self.location.contains(self.solar_panel_locations):
                 raise ValidationError({'solar_panel_locations': 'Solar panel locations must be within the project bounds.'})
 
-
     class Meta:
         permissions = (
             ('contributor', 'Can contribute data (i.e. upload datasets and create projects)'),
@@ -158,37 +157,73 @@ class Documents(models.Model):
     document_type = models.CharField(max_length=1, choices=DOCUMENT_TYPE_CHOICES, default=EIA)
 
 
-class TaxaOrder(models.Model):
-    """Currently this tool just services birds and bats, but more orders might get added in the future."""
-    order = models.CharField(max_length=20)  # Saurischia = birds, Laurasiatheria = bats
+"""
+class TaxonLevelDefinitions(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    depth = models.SmallIntegerField(unique=True)
+
+
+class TaxaFunctionalGroup(models.Model):
+    order = models.ForeignKey(TaxaOrder)
+    functional_group = models.CharField(max_length=20)
 
     def __str__(self):
-        return self.order
+        return self.functional_group
 
     def natural_key(self):
         return self.__str__()
 
+"""
 
-class Taxa(models.Model):
-    """
-    Holds a list of all of current names and statuses of the Southern African birds and bats.
-    Should get synchronised regularly with a master list. For this reason taxa info has not been normalised.
-    """
-    # Determines whether a species is a bird or a bat. This is in a separate table because focal sites are also bird/bat
-    order = models.ForeignKey(TaxaOrder)
 
-    # Long debate with myself & Fhatani about whether to separate out family & genus into extra tables to normalise
-    # But as no data is ever input by users into the taxa info, and as this info is always coming from a verified
-    # source and is strictly controlled I am going to assume it is always clean and correct. Plus size should be
-    # under 5000 records so no speed issues/db size issues to speak of.
-    family = models.CharField(max_length=20)
-    genus = models.CharField(max_length=20)
-    species = models.CharField(max_length=20)
+class Taxon(MPTTModel):
+    # Scientific and common names
+    name = models.CharField(max_length=100)
+    vernacular_name = models.CharField(max_length=100, null=True, blank=True)
+
+    # This is used by mptt to build trees, we are just translating directly from GBIF's data
+    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
 
     # It is important to know when this name was last updated
     updated = models.DateTimeField(auto_now_add=True)
 
-    # Not sure where this red list stuff is going to come from, IUCN?
+    # We want to keep a list of root taxa rather than getting all birds & bats
+    # This way our taxa building tree mechanism is more robust & flexible
+    # So for example, people can add new taxon roots which are snakes or plants or something
+    is_root = models.BooleanField(default=False)
+
+    # This is the GBIF id for the taxon, it will always be unique so let's use it as the PK
+    id = models.IntegerField(primary_key=True)
+
+    # I don't think we can map taxonomic levels directly to depth because some levels are optional, e.g. superfamily
+    # Plus they might get changed in time e.g. subspecies might get added. So we are going to steal Specify's tactic:
+    # level = models.ForeignKey(TaxonLevelDefinitions)
+    # Actually no, I think we can safely see the taxonomic backbone as set in stone, this is how BRAHMS works
+    KINGDOM = 'KI'
+    PHYLUM = 'PH'
+    CLASS = 'CL'
+    ORDER = 'OR'
+    FAMILY = 'FA'
+    GENUS = 'GE'
+    SPECIES = 'SP'
+    INFRASPECIFIC_NAME = 'IN'
+    SUBSPECIES = 'SU'
+    RANK_CHOICES = (
+        (KINGDOM, 'Kingdom'),
+        (PHYLUM, 'Phylum'),
+        (CLASS, 'Class'),
+        (ORDER, 'Order'),
+        (FAMILY, 'Family'),
+        (GENUS, 'Genus'),
+        (INFRASPECIFIC_NAME, 'Infraspecific name'),
+        (SPECIES, 'Species'),
+        (SUBSPECIES, 'Subspecies')
+    )
+    rank = models.CharField(max_length=2, choices=RANK_CHOICES, default=SPECIES)
+
+    # Often we want to just refer to actual species or subspecies
+
+    # Red list info will come from the IUCN using the API http://api.iucnredlist.org/index/species/Aves.js
     red_list_choices = (
         ('EX', 'Extinct'),
         ('EW', 'Extinct in the Wild'),
@@ -197,19 +232,19 @@ class Taxa(models.Model):
         ('VU', 'Vulnerable'),
         ('NT', 'Near Threatened'),
         ('LC', 'Least Concern'),
-        ('DD', 'Least Concern')
+        ('DD', 'Data Deficient')
     )
-    red_list = models.CharField(max_length=1, choices=red_list_choices)
+    red_list = models.CharField(max_length=2, choices=red_list_choices, default='LC')
+
+    # I am not sure about where sensitive species will come from
     sensitive = models.BooleanField(default=False)
 
-    class Meta:
-        unique_together = ('family', 'genus', 'species')
+    # Required for the MPTT model class
+    class MPTTMeta:
+        order_insertion_by = ['name']
 
     def __str__(self):
-        return self.genus + ' ' + self.species
-
-    def natural_key(self):
-        return str(self)
+        return self.name
 
 
 class FocalSite(models.Model):
@@ -219,7 +254,7 @@ class FocalSite(models.Model):
     """
     location = models.PolygonField()
     name = models.CharField(max_length=50)
-    order = models.ForeignKey(TaxaOrder)
+    taxon = models.ForeignKey(Taxon)
     project = models.ForeignKey(Project)
     objects = models.GeoManager()
     sensitive = models.BooleanField(default=False)
@@ -330,8 +365,8 @@ class PopulationData(models.Model):
     Census, focal point & transect data form a population count/estimate
     """
     metadata = models.ForeignKey(MetaData)
-    taxa = models.ForeignKey(Taxa)
-    count = models.IntegerField()  # Actual number counted / for bats this activity levels
+    taxa = models.ForeignKey(Taxon)
+    count = models.IntegerField()  # Actual number counted / for bats this activity levels or number of passes
 
     COLLISION_HIGH = 'H'
     COLLISION_MEDIUM = 'M'
@@ -359,7 +394,7 @@ class FocalSiteData(models.Model):
     Records activity for a particular focal site
     """
     metadata = models.ForeignKey(MetaData)
-    taxa = models.ForeignKey(Taxa)
+    taxa = models.ForeignKey(Taxon)
     focal_site = models.ForeignKey(FocalSite)
     count = models.IntegerField()
 
@@ -390,7 +425,7 @@ class FatalityData(models.Model):
     Records fatalities
     """
     metadata = models.ForeignKey(MetaData)
-    taxa = models.ForeignKey(Taxa)
+    taxa = models.ForeignKey(Taxon)
     coordinates = models.PointField()
     objects = models.GeoManager()
 

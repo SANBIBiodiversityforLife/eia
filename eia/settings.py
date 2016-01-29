@@ -44,6 +44,7 @@ INSTALLED_APPS = (
     'leaflet',
     'bootstrap3',
     'django_filters',
+    'mptt',
 
     # django allauth
     'django.contrib.sites',
@@ -194,3 +195,9 @@ MESSAGE_TAGS = {
 
 # My own spreadsheet creation methods need this
 MAX_XLSX_ROWS = 2000
+
+# I have a taxonomy tree builder which uses these settings
+GBIF_API_OFFSET = 40
+GBIF_API_URL = 'http://api.gbif.org/v1/species/{id}/children?limit=' + str(GBIF_API_OFFSET) + '&offset={offset}'
+GBIF_API_OCCURRENCE_URL = 'http://api.gbif.org/v1/occurrence/search?taxonKey={id}&country=ZA&limit=0' # We just want count, so limit 0
+BASE_TAXA = ['Chiroptera', 'Aves'] # 734 and 212 GBIF IDs

@@ -506,7 +506,5 @@ def project_list(request):
 def projects_map(request):
     q = models.Project.objects.all().select_related('developer')
     f = ProjectFilter(request.GET, queryset=q)
-    print(q[0].developer)
-    #projects = models.Project.objects.all()[:1000]
     geojsons = serialize('geojson', f)
     return render(request, 'core/projects_map.html', {'geojson': geojsons, 'filter': f})

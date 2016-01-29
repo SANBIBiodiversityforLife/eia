@@ -15,8 +15,8 @@
 </ol>
 {% endblock breadcrumb %}
 
-{% block header-text %}Projects <a href="{% url 'projects_list' %}" type="button" class="btn btn-info">
-<span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add project</a>{% endblock header-text %}
+{% block header-text %}Projects {% if perms.core.contributor %}<a href="{% url 'project_create' %}" type="button" class="btn btn-info">
+<span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add project</a>{% endif %}{% endblock header-text %}
 
 {% block content %}
 <ul class="nav nav-pills">
