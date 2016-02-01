@@ -1,146 +1,103 @@
 $(document).ready(function() {
-    // When the map init functions we need to do a few things
+    // This function is called when the map initializes (automatically via django-leaflet)
     $(window).on('map:init', function(e) {
-      console.log(e);
-      map = e.originalEvent.detail.map;
-      //var map = e.map;
-      console.log(map.drawControl);
-      console.log(map.drawnItems);
-      console.log(map._editionLayer);
-      var featureGroup;
-       map.on('map:loadfield', function (e) {
-            console.log('pay attention');
-            console.log(e);
-            featureGroup = e.field.drawnItems;
-            console.log(featureGroup);
-           //map.drawControl.setDrawingOptions(...);
-       });
+        // Get a reference to the map
+        map = e.originalEvent.detail.map;
 
-
-      // Add the filelayer to allow the uploading of files
-      control = L.Control.fileLayerLoad({
-          // See http://leafletjs.com/reference.html#geojson-options
-          layerOptions: {style: {color:'red'},
-          //onEachFeature: function(feature){
-          //    featureGroup.addLayer(feature);
-          //},
-          },
-          // Add to map after loading (default: true) ?
-          addToMap: false,
-          // File size limit in kb (default: 1024) ?
-          fileSizeLimit: 1024,
-          // Restrict accepted file formats (default: .geojson, .kml, and .gpx) ?
-          formats: [
-              '.geojson',
-              '.kml',
-              '.gpx'
-          ],
-      });
-      control.addTo(map);
-
-      // Every time a file is put on we need to wipe the previous layers
-      control.loader.on('data:loading', function (e) {
-        // Iterate over the layers
-        map.eachLayer(function(layer) {
-          // Check to make sure that we're not getting rid of the base map
-          if(layer._latlngs) {
-            console.log(layer);
-            map.removeLayer(layer);
-          }
-        });
-      });
-
-      // It also needs to get added to the featuregroup
-
-      control.loader.on('data:loaded', function (e) {
-        // Get the geojson layer
-        gLayer = e.layer.getLayers()[0];
-
-        // If it's a KML it will have altitude, so iterate through and strip them out
-        newLatLngs = []
-        oldLatLngs = gLayer.getLatLngs();
-        $(oldLatLngs).each(function(index, obj) {
-            newLatLng = {lat: obj.lat, lng: obj.lng} // Can also: new L.LatLng(obj.lat, obj.lng);
-            newLatLngs.push(newLatLng);
-        })
-
-        // Set the new latlngs for the polygon
-        gLayer.setLatLngs(newLatLngs);
-
-        removedLayers = []
-        //console.log('glayer VV');
-        //console.log(gLayer);
-        console.log(map);
-        map.eachLayer(function(layer) {
-            //$.isFunction($.fn.lettering)
-            //console.log(typeof(layer));
-            if(layer._layers) {
-                layer.clearLayers();
-                //layer.addLayer(gLayer);
-                //console.log('yes layers VV')
-            }
-            else {
-                //console.log('no layers VV')
-            }
-            //console.log(layer);
-          // 29 seems to be the featuregroup which Leaflet.Draw uses with geodjango. Let's hope it never changes.
-          // if(layer._leaflet_id == 28) {
-          // if(layer.getLayers().length > 0) { todo find some other way of doing this jesus christ fuck
-            //layer.clearLayers();
-            //layer.removeLayer(56);
-            //layer.addLayer(gLayer);
-          //}
-          /*else if(layer._latlngs) {
-            map.removeLayer(layer);
-          }*/
+        // Store the featureGroup (drawnItems) which django-leaflet's drawControl uses to submit to the form
+        var drawnItems;
+        var store;
+        map.on('map:loadfield', function (e) {
+            drawnItems = e.field.drawnItems;
+            store = e.field.store;
         });
 
-        featureGroup.addLayer(gLayer); todo note this
-        //map.addLayer(gLayer);
+        // Add the filelayer to allow the uploading of files
+        control = L.Control.fileLayerLoad({
+            // See http://leafletjs.com/reference.html#geojson-options
+            layerOptions: {
+                style: {color:'red'},
+                //onEachFeature: function(feature){ drawnItems.addLayer(feature); },
+            },
 
-        //console.log(e);
-        console.log('loaded');
-        //console.log(gLayer);
-        //map.addLayer(reallayer);
-        /*var featureGroup = L.featureGroup().addTo(map);
-        //gl = e.layer.geometryToLayer();
-        //console.log(gl);
-        reallayer = e.layer.getLayers()[0];
-        featureGroup.addLayer(reallayer);
-        console.log(reallayer);*/
-        /*map.eachLayer(function(layer) {
-          if(layer._latlngs)
-          featureGroup.addLayer(e.layer);
+            // Add to map after loading (default: true) ?
+            addToMap: false,
+        });
+        control.addTo(map);
+
+        // Every time a file is put on we need to wipe the previous layers
+        /*control.loader.on('data:loading', function (e) {
+            // Iterate over the layers
+            map.eachLayer(function(layer) {
+                // Check to make sure that we're not getting rid of the base map
+                if(layer._latlngs)
+                    map.removeLayer(layer);
+
+                // We need to wipe all of the layers from the drawnItems featureGroup as well
+                // It seems that when drawing a polygon it adds the polygon layer with latlongs and a separate layer
+                // to the drawnItems featureGroup
+                //if(layer._layers)
+                //    layer.clearLayers();
+            });
         });*/
-        //featureGroup.addLayer(e.layer[0]);
 
-        //featureGroup.addTo(map);
-      });
+        // When the fileLayer has loaded some data (i.e. someone has loaded a file)
+        control.loader.on('data:loaded', function (e) {
+            // Get the geojson layer which gets added from the file layers
+            gLayer = e.layer.getLayers()[0];
 
+            // If it's a KML it will have altitude, so iterate through and strip them out
+            newLatLngs = []
+            oldLatLngs = gLayer.getLatLngs();
+            $(oldLatLngs).each(function(index, obj) {
+                newLatLng = {lat: obj.lat, lng: obj.lng} // Can also: new L.LatLng(obj.lat, obj.lng);
+                newLatLngs.push(newLatLng);
+            })
 
-      // Every time someone draws something we need to wipe the previous layers
-        map.on('draw:created', function (e) {
+            // Set the new latlngs for the polygon
+            gLayer.setLatLngs(newLatLngs);
 
-          //console.log(e.layer);
-          // Iterate over the layers
-          map.eachLayer(function(layer) {
-            //console.log(layer);
-            // Check to make sure that we're not getting rid of the base map
-            if(layer._latlngs) {
-              map.removeLayer(layer);
-            }
-          });
+            // If someone has drawn something previously we need to wipe it
+            drawnItems.eachLayer(function(l) {
+                map.removeLayer(l);
+            })
+            drawnItems.clearLayers();
+            /*
+            map.eachLayer(function(layer) {
+                if(layer._layers) {
+                    layer.clearLayers();
+                    //console.log('yes layers VV')
+                }
+                else {
+                    //console.log('no layers VV')
+                }
+            });*/
+            // Add the polygon to the map because django-leaflet seems to
+            map.addLayer(gLayer)
 
-          // Do whatever else you need to. (save to db, add to map etc)
-          //map.addLayer(e.layer);
-          //featureGroup.addLayer(e.layer);
-      });
+            // Add the polygon to the drawnItems featureGroup
+            drawnItems.addLayer(gLayer);
 
+            // Django-leaflet seems to do this so just copy him until something works
+            store.save(drawnItems);
+        });
 
-      $('form').submit(function(event) {
-        console.log($('form'));
-        console.log($('form').serialize());
-        event.preventDefault();
-      })
+        // Every time someone draws something we need to wipe the previous layers
+        /*map.on('draw:created', function (e) {
+            // Iterate over the layers
+            map.eachLayer(function(layer) {
+                // Check to make sure that we're not getting rid of the base map
+                if(layer._latlngs) {
+                    map.removeLayer(layer);
+                }
+            });
+        });*/
+
+        // Just stopping it from submitting while we are debugging.
+        /*$('form').submit(function(event) {
+            console.log($('form'));
+            console.log($('form').serialize());
+            event.preventDefault();
+        });*/
     });
 })
