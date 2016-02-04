@@ -5,6 +5,8 @@ from django.contrib.auth.models import User, Group
 from core.multiple_select_field import MultipleSelectField
 from django.utils import formats
 from mptt.models import MPTTModel, TreeForeignKey
+import re
+from django.contrib.postgres.fields import IntegerRangeField
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -137,16 +139,24 @@ class PreviousDevelopers(models.Model):
     stopped = models.DateTimeField(auto_now_add=True)
 
 
+def document_upload_path(instance, filename):
+    filename_parts = filename.split('.')
+    extension = filename_parts[1]
+    cleaned_name = re.sub('\s+', '_', instance.name)
+    return 'uploads/{0}.{1}'.format(cleaned_name, extension)
+
+
 class Documents(models.Model):
     """
     Scanned in documents should be uploadable.
     Note that DEA are collecting EIA reports separately, but until we get the two linked up this can be used to store
     EIA reports as well.
     """
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=20, help_text='A short, descriptive name for the document')
     project = models.ForeignKey(Project)
     uploaded = models.DateTimeField(auto_now_add=True)
-    # TODO uploader =
+    uploader = models.ForeignKey(User)
+    document = models.FileField(upload_to=document_upload_path)
 
     EIA = 'E'
     OTHER = 'O'
@@ -155,25 +165,6 @@ class Documents(models.Model):
         (OTHER, 'Other')
     )
     document_type = models.CharField(max_length=1, choices=DOCUMENT_TYPE_CHOICES, default=EIA)
-
-
-"""
-class TaxonLevelDefinitions(models.Model):
-    name = models.CharField(max_length=50, unique=True)
-    depth = models.SmallIntegerField(unique=True)
-
-
-class TaxaFunctionalGroup(models.Model):
-    order = models.ForeignKey(TaxaOrder)
-    functional_group = models.CharField(max_length=20)
-
-    def __str__(self):
-        return self.functional_group
-
-    def natural_key(self):
-        return self.__str__()
-
-"""
 
 
 class Taxon(MPTTModel):
@@ -252,12 +243,13 @@ class FocalSite(models.Model):
     Focal sites are locations of particular interest in projects.
     Data is collected and stored against each focal site.
     """
-    location = models.PolygonField()
-    name = models.CharField(max_length=50)
-    taxon = models.ForeignKey(Taxon)
-    project = models.ForeignKey(Project)
+    location = models.PolygonField(help_text='The area of the focal site')
     objects = models.GeoManager()
+    name = models.CharField(max_length=50, help_text='A name by which the focal site can be easily identified')
     sensitive = models.BooleanField(default=False)
+
+    # Perhaps projects don't have to be manually associated with focal sites, can just use GIS?
+    # project = models.ManyToManyField(Project, help_text='Project(s) which are associated with this focal site')
 
     ROOST = 'R'
     COURTSHIP = 'C'
@@ -280,7 +272,7 @@ class FocalSite(models.Model):
     CREVICE = 'CR'
     CULVERT = 'CU'
     MINE = 'MI'
-    FRUITTREES = 'FT'
+    FRUIT_TREES = 'FT'
 
     # Birds
     TREES = 'TR'
@@ -294,7 +286,7 @@ class FocalSite(models.Model):
         (CREVICE, 'Rocky crevice'),
         (CULVERT, 'Culvert'),
         (MINE, 'Mine'),
-        (FRUITTREES, 'Fruit trees'),
+        (FRUIT_TREES, 'Fruit trees'),
         (TREES, 'Trees'),
         (CAVE, 'Cave/ridge or underhanging'),
         (CLEARING, 'Clearing'),
@@ -306,18 +298,16 @@ class FocalSite(models.Model):
     def get_absolute_url(self):
         return reverse('focal_site_data', kwargs={'pk': self.project.pk})
 
-    def clean(self):
+    # def clean(self):
         # Coordinate cannot be outside the bounds of the project
-        if not self.project.location.contains(self.location):
-            raise ValidationError({'location': 'Focal sites must be within the project bounds.'})
+        # if not self.project.location.contains(self.location):
+        #    raise ValidationError({'location': 'Focal sites must be within the project bounds.'})
 
 class MetaData(models.Model):
     """
     Metadata for the 3 different types of datasets - population data, focal site data, fatality data
     """
     project = models.ForeignKey(Project)
-    collected_to = models.DateTimeField()
-    collected_from = models.DateTimeField()
     flagged_for_query = models.BooleanField(default=False)
     control_data = models.BooleanField("This is control data", default=False)
     uploader = models.ForeignKey(User)
@@ -360,27 +350,43 @@ class MetaData(models.Model):
         models.PopulationData.objects.get(metadata=self)
 
 
+class RemovalFlag(models.Model):
+    """
+    Allows users to flag datasets for removal
+    """
+    metadata = models.ForeignKey(MetaData, help_text='The dataset issued for removal')
+    reason = models.TextField(max_length=2000, help_text='Why should this dataset be removed?')
+    requested_by = models.ForeignKey(User, help_text='The user who has requested the removal of this dataset')
+    requested_on = models.DateTimeField(auto_now_add=True, help_text='When the removal was requested')
+
+    def get_absolute_url(self):
+        return reverse('projects_list')
+
+
+# This help text is used in the models below
+taxa_help_text = 'Identify to genus or species level, or select Unknown'
+
+
 class PopulationData(models.Model):
     """
     Census, focal point & transect data form a population count/estimate
     """
     metadata = models.ForeignKey(MetaData)
-    taxa = models.ForeignKey(Taxon)
-    count = models.IntegerField()  # Actual number counted / for bats this activity levels or number of passes
+    taxa = models.ForeignKey(Taxon, help_text=taxa_help_text)
+    observed = models.DateTimeField(help_text='Date observed')
+    count = models.IntegerField(help_text='Number counted, or activity level/number of passes per hour (for bats)')
 
-    COLLISION_HIGH = 'H'
-    COLLISION_MEDIUM = 'M'
-    COLLISION_LOW = 'L'
-    collision_risk_choices = (
-        (COLLISION_HIGH, 'High risk of collision'),
-        (COLLISION_MEDIUM, 'Medium risk of collision'),
-        (COLLISION_LOW, 'Low risk of collision')
-    )
-    collision_risk = models.CharField(max_length=1, choices=collision_risk_choices)
+    flight_height_bounds = IntegerRangeField(help_text='Flight height range in metres (equipment height for bats)')
+
+    def get_project_location(self):
+        return self.metadata.project.location
+    location = models.PolygonField(default=get_project_location)
+    objects = models.GeoManager()
+
 
     # Birds only:
-    density_km = models.DecimalField(max_digits=10, decimal_places=5)  # Estimate of density per km^2
-    passage_rate = models.DecimalField(max_digits=7, decimal_places=2)  # Number passing through area per hour
+    # density_km = models.DecimalField(max_digits=10, decimal_places=5)  # Estimate of density per km^2
+    # passage_rate = models.DecimalField(max_digits=7, decimal_places=2)  # Number passing through area per hour
 
     def get_absolute_url(self):
         return reverse('project_detail', kwargs={'pk': self.pk})
@@ -394,16 +400,19 @@ class FocalSiteData(models.Model):
     Records activity for a particular focal site
     """
     metadata = models.ForeignKey(MetaData)
-    taxa = models.ForeignKey(Taxon)
-    focal_site = models.ForeignKey(FocalSite)
-    count = models.IntegerField()
+    taxa = models.ForeignKey(Taxon, help_text=taxa_help_text)
+    observed = models.DateTimeField(help_text='Date observed')
+    count = models.IntegerField(help_text='Number counted')
+
+    focal_site = models.ForeignKey(FocalSite, help_text='The focal site this dataset was recorded at')
 
     life_stage_choices = (
         ('C', 'Chick/pup'),
         ('J', 'Juvenile'),
         ('A', 'Adult')
     )
-    life_stage = models.CharField(max_length=1, choices=life_stage_choices, default='A')
+    life_stage = models.CharField(max_length=1, choices=life_stage_choices, default='A',
+                                  help_text='Please upload a single record for each individual and specify their life stage')
 
     # Only applicable to birds
     activity_choices = (
@@ -417,7 +426,8 @@ class FocalSiteData(models.Model):
         ('PFS', 'parents with fecal sac'),
         ('PAY', 'parents and young not in nest')
     )
-    activity = models.CharField(max_length=3, choices=activity_choices, null=True, blank=True)
+    activity = models.CharField(max_length=3, choices=activity_choices, null=True, blank=True,
+                                help_text='Only applicable for birds')
 
 
 class FatalityData(models.Model):
@@ -425,8 +435,10 @@ class FatalityData(models.Model):
     Records fatalities
     """
     metadata = models.ForeignKey(MetaData)
-    taxa = models.ForeignKey(Taxon)
-    coordinates = models.PointField()
+    taxa = models.ForeignKey(Taxon, help_text=taxa_help_text)
+    found = models.DateTimeField(help_text='Date found')
+
+    coordinates = models.PointField(help_text='The latitude and longitude values where the corpse was found')
     objects = models.GeoManager()
 
     cause_of_death_choices = (
@@ -438,22 +450,9 @@ class FatalityData(models.Model):
         ('P', 'Predation'),
         ('U', 'Undetermined')
     )
-    cause_of_death = models.CharField(max_length=1, choices=cause_of_death_choices)
+    cause_of_death = models.CharField(max_length=1, choices=cause_of_death_choices, help_text='Specify cause of death')
 
     def clean(self):
         # Coordinate cannot be outside the bounds of the project
         if not self.metadata.project.location.contains(self.coordinates):
             raise ValidationError({'coordinates': 'Fatality coordinates are outside the project polygon bounds.'})
-
-
-class RemovalFlag(models.Model):
-    """
-    Allows users to flag datasets for removal
-    """
-    metadata = models.ForeignKey(MetaData)
-    reason = models.TextField(max_length=2000)
-    requested_by = models.ForeignKey(User)
-    requested_on = models.DateTimeField(auto_now_add=True)
-
-    def get_absolute_url(self):
-        return reverse('projects_list')

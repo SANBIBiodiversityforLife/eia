@@ -94,7 +94,7 @@ class EquipmentMakeCreateForm(forms.ModelForm):
 class FocalSiteCreateForm(forms.ModelForm):
     class Meta:
         model = models.FocalSite
-        fields = ('location', 'name', 'taxon', 'sensitive', 'activity', 'habitat')
+        fields = ('location', 'name', 'sensitive', 'activity', 'habitat') # todo do i need to insert 'taxon' again?
         widgets = {'location': LeafletWidget()}
 
     def __init__(self, *args, **kwargs):
@@ -177,16 +177,10 @@ class MetaDataCreateForm(forms.ModelForm):
         self.project_pk = kwargs.pop('project_pk')
         self.uploader = kwargs.pop('uploader')
         super(MetaDataCreateForm, self).__init__(*args, **kwargs)
-        self.fields['collected_from'].label = "Data was collected between"
-        self.fields['collected_to'].label = "and"
 
     class Meta:
         model = models.MetaData
-        fields = ('upload_data', 'collected_from', 'collected_to', 'control_data')
-        widgets = {
-            'collected_from': forms.TextInput(attrs={'class': 'datepicker'}),
-            'collected_to': forms.TextInput(attrs={'class': 'datepicker'})
-        }
+        fields = ('upload_data', 'control_data')
 
     # Gets overwritten
     def create_data_object(self, metadata, taxa, cells):

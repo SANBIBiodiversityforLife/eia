@@ -11,16 +11,8 @@ import requests
 
 
 def reset_taxa_tree(request):
-    # Reset spreadsheets (move this down later)
-    create_population_data_spreadsheet()
-    create_fatality_data_spreadsheet()
-    create_focal_site_data_spreadsheet()
-    create_population_data_spreadsheet(validation=False)
-    create_fatality_data_spreadsheet(validation=False)
-    create_focal_site_data_spreadsheet(validation=False)
-
     # Just temporarily making sure I don't delete it by accident
-    return
+    # return
 
     # Empty taxon table of everything apart from root items
     models.Taxon.objects.filter(is_root=False).delete()
@@ -32,7 +24,14 @@ def reset_taxa_tree(request):
     for taxon in taxa:
         recursive_tree_builder(taxon.id)
 
-    # Reset spreadsheets
+    # Reset spreadsheets (move this down later)
+    create_population_data_spreadsheet()
+    create_fatality_data_spreadsheet()
+    create_focal_site_data_spreadsheet()
+    create_population_data_spreadsheet(validation=False)
+    create_fatality_data_spreadsheet(validation=False)
+    create_focal_site_data_spreadsheet(validation=False)
+
 
 def recursive_tree_builder(parent_id):
     offset = 0
@@ -42,7 +41,7 @@ def recursive_tree_builder(parent_id):
 
     while not end_of_records:
         # Get the data
-        r = requests.get(settings.GBIF_API_URL.format(id=parent_id, offset=offset))
+        r = requests.get(settings.GBIF_API_CHILDREN_URL.format(id=parent_id, offset=offset))
         data = r.json()
 
         # First, loop through the children in this result set
@@ -75,6 +74,10 @@ def recursive_tree_builder(parent_id):
                 else:
                     print(' --- IN SA : ' + child['canonicalName'] + '(' + child['rank'] + ') - ' + str(taxon_id))
 
+            # It seems the API is not that great at always retrieving vernacularName, so query that separately
+            # r = requests.get(settings.GBIF_API_SPECIES_URL.format(id=taxon_id))
+            # species_info = r.json()
+
             # Populate and save the taxon object
             taxon = models.Taxon(name=child['canonicalName'],
                                  rank=rank,
@@ -82,6 +85,8 @@ def recursive_tree_builder(parent_id):
                                  parent_id=parent_id)
             if 'vernacularName' in child:
                 taxon.vernacular_name = child['vernacularName']
+            #if 'vernacularName' in species_info:
+            #    taxon.vernacular_name = species_info['vernacularName']
             taxon.save()
 
             # Recursion

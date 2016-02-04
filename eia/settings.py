@@ -198,6 +198,7 @@ MAX_XLSX_ROWS = 2000
 
 # I have a taxonomy tree builder which uses these settings
 GBIF_API_OFFSET = 40
-GBIF_API_URL = 'http://api.gbif.org/v1/species/{id}/children?limit=' + str(GBIF_API_OFFSET) + '&offset={offset}'
-GBIF_API_OCCURRENCE_URL = 'http://api.gbif.org/v1/occurrence/search?taxonKey={id}&country=ZA&limit=0' # We just want count, so limit 0
+GBIF_API_CHILDREN_URL = 'http://api.gbif.org/v1/species/{id}/children?limit=' + str(GBIF_API_OFFSET) + '&offset={offset}&language=en'
+GBIF_API_OCCURRENCE_URL = 'http://api.gbif.org/v1/occurrence/search?taxonKey={id}&country=ZA&limit=0&language=en' # We just want count, so limit 0
+GBIF_API_SPECIES_URL = 'http://api.gbif.org/v1/species/{id}?&language=en'
 BASE_TAXA = ['Chiroptera', 'Aves'] # 734 and 212 GBIF IDs
