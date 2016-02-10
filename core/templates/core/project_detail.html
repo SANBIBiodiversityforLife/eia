@@ -1,4 +1,4 @@
-{% extends "core/base_project_detail.html" %}
+{% extends "core/_base_project_detail.html" %}
 {% load leaflet_tags %}
 {% load static %}
 
@@ -10,27 +10,21 @@
 <script src="{% static 'leaflet-awesome-markers/dist/leaflet.awesome-markers.min.js' %}"></script>
 {% endblock css %}
 
-{% block subheader %}details{% endblock subheader %}
+{% block sub-breadcrumb %}<li class="active">{{ project.name }}</li>{% endblock %}
 
-{% block subcontent %}
+{% block sub-content %}
+<!-- Header -->
 <h3>
   A {{ project.get_energy_type_display }} energy project,  <strong>developed by {{ project.developer }}</strong>.
   {% if perms.core.contributor %}<a href="{% url 'project_update' project.id %}" type="button" class="btn btn-info pull-right">
   <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Edit details
   </a>{% endif %}
 </h3>
+
+<!-- Map -->
 {% leaflet_map "main" callback="main_map_init" %}
-<!--Equipment details:
-<dl class="dl-horizontal">
-  <dt>Type</dt>
-  <dd>{{ project.get_energy_type_display }}</dd>
-  <dt>Make</dt>
-  <dd>{{ project.equipment_make }}</dd>
-  <dt>Capacity</dt>
-  <dd>{{ project.equipment_capacity }}</dd>
-  <dt>Height</dt>
-  <dd>{{ project.equipment_height }}</dd>
-</dl>-->
+
+<!-- Tables of project details -->
 <div class="row">
   <div class="col-md-6">
     <table class="table">
@@ -73,7 +67,7 @@
     </table>
   </div>
 </div>
-{% endblock subcontent %}
+{% endblock sub-content %}
 
 {% block js %}
 {% if turbine_locations %}<script src='{% static "core/js/leaflet_turbine_markers.js" %}'></script>{% endif %}

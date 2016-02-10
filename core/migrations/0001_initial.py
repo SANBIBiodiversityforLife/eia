@@ -89,7 +89,7 @@ class Migration(migrations.Migration):
                 ('observed', models.DateTimeField(help_text='Date observed')),
                 ('count', models.IntegerField(help_text='Number counted, or activity level/number of passes per hour (for bats)')),
                 ('flight_height_bounds', django.contrib.postgres.fields.ranges.IntegerRangeField(help_text='Flight height range in metres (equipment height for bats)')),
-                ('location', django.contrib.gis.db.models.fields.PolygonField(default=core.models.PopulationData.get_project_location, srid=4326)),
+                ('location', django.contrib.gis.db.models.fields.PolygonField()),
                 ('metadata', models.ForeignKey(to='core.MetaData')),
             ],
         ),

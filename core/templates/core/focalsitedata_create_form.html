@@ -1,6 +1,0 @@
-{% extends "core/_base_dataset_create_form.html" %}
-{% load static %}
-
-{% block parent-link %}<a href="{% url 'focal_site_data' project.id %}">Focal site data</a>{% endblock %}
-{% block breadcrumb-text %}{% block header-detail-text %}focal site{% endblock %}{% endblock %}
-{% block file-url %}{% static "focal_site_data_for_upload.xlsx" %}{% endblock %}

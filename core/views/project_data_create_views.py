@@ -1,0 +1,332 @@
+# Django rendering stuff
+from django.shortcuts import render_to_response, render, redirect
+
+# Core & settings
+from core import models, forms
+
+# JSON & serialization
+from django.http import JsonResponse
+import json
+from django.contrib.gis.geos import Point
+
+# Datetime
+from datetime import datetime, timedelta
+
+
+def population_data_create(request, project_pk):
+    # Retrieve the project for passing to context and the form
+    project = models.Project.objects.get(pk=project_pk)
+
+    # Add the data-type-specific headers and count types for handsontable to the context
+    context = {'project': project,
+               'headers': [models.PopulationData.taxon_help,
+                           models.PopulationData.abundance_help,
+                           models.PopulationData.observed_help,
+                           'Time (24h)<br>Round to hr',  # Split up date and time
+                           models.PopulationData.abundance_type_help,
+                           models.PopulationData.flight_height_help],
+               'count_types': list(models.PopulationData.ABUNDANCE_TYPE_CHOICES)}
+
+    # Sort out the location form, dealing with this separately for clarity
+    if request.is_ajax():
+        # Check the location to make sure it's valid
+        location_form = forms.PopulationDataCreateForm(request.POST)
+        if not location_form.is_valid():
+            return JsonResponse(location_form.errors, status=400)
+    else:
+        context['map_form'] = forms.PopulationDataCreateForm(project_polygon=project.location)
+
+    # Process the handsontable data
+    if request.is_ajax():
+        # Retrieve the hot_data
+        hot_data = json.loads(request.POST['hot_data'])
+
+        # Create the metadata
+        metadata = models.MetaData(project=project, uploader=request.user)
+        metadata.save()
+
+        # We mustn't save anything unless they are all ok, so wrap in a try
+        try:
+            objects = []
+            for row in hot_data:
+                print(row)
+                # Often the last row seems to be blank, so if row[0 - 5] is blank skip it
+                if all(r is None for r in row):
+                    continue
+
+                # Try get the taxa by scientific name
+                taxon = models.Taxon.objects.filter(name=row[0])
+
+                if not taxon:
+                    # If that doesn't work try get it by common name
+                    taxon = models.Taxon.objects.filter(vernacular_name=row[0])
+
+                    if not taxon:
+                        raise ValueError('No taxa found, something has gone wrong')
+
+                taxon = taxon[0]
+
+                # Abundance/count
+                count = row[1]
+
+                # Get a datetime from the time + date
+                observed = datetime.strptime(row[2], '%d/%m/%Y') + timedelta(hours=row[3])
+
+                # Count type
+                abundance_type_choices = {v: k for k, v in dict(models.PopulationData.ABUNDANCE_TYPE_CHOICES).items()}
+                abundance_type = abundance_type_choices[row[4]]  # At this stage it will raise a KeyError if the key is not found
+
+                # Flight height integer range
+                flight_height = row[5].split('-')
+                flight_height = (int(flight_height[0]), int(flight_height[1]))
+                print('flight')
+
+                # Create - does this validate? i hope so
+                obj = models.PopulationData(metadata=metadata,
+                                            taxon=taxon,
+                                            observed=observed,
+                                            abundance=count,
+                                            abundance_type=abundance_type,
+                                            flight_height=flight_height,
+                                            location=request.POST['location'])
+
+                # Add to the list
+                objects.append(obj)
+
+            # Now we have successfully got all our taxa sorted, we save them
+            for obj in objects:
+                obj.save()
+
+            # Return how many saved (should always be all, just to provide reassurance to them)
+            return JsonResponse({'objects_saved': len(objects), 'metadata_pk': metadata.pk})
+        except ValueError as e:
+            # Delete the metadata
+            metadata.delete()
+
+            # Send error back to form
+            return JsonResponse({'error': e.args()}, status=400)
+
+    # Otherwise, if we are showing the page for the first time...
+    # Get all the taxa
+    taxa = models.Taxon.objects.filter(rank__in=[models.Taxon.GENUS, models.Taxon.SPECIES, models.Taxon.SUBSPECIES]) | \
+           models.Taxon.objects.filter(id=0)
+
+    # Get the scientific and vernacular names separately
+    scientific_names = list(taxa.values_list('name', flat=True).distinct())
+    vernacular_names = list(taxa.values_list('vernacular_name', flat=True).distinct())
+
+    # Merge the two together, note it's going into a dropdown so can't have duplicate values anyway
+    # When we reinterpret it coming back we can just assume it's a scientific name first and vernacular second
+    names = scientific_names + vernacular_names
+
+    # Get rid of the none value as it throws the js out (creeps in with vernacular names)
+    names = [n for n in names if n is not None]
+    context['taxa'] = names
+
+    # Show the template
+    return render(request, 'core/population_data_create.html', context)
+
+
+def focal_site_data_create(request, project_pk, focal_site_pk):
+    # Retrieve the project for passing to context and the form
+    project = models.Project.objects.get(pk=project_pk)
+
+    # Add the data-type-specific headers and count types for handsontable to the context
+    context = {'project': project,
+               'focal_site_pk': focal_site_pk,
+               'headers': [models.FocalSiteData.taxon_help,
+                           models.FocalSiteData.abundance_help,
+                           models.FocalSiteData.observed_help,
+                           'Time (24h)<br>Round to hr',  # Split up date and time
+                           models.FocalSiteData.life_stage_help,
+                           models.FocalSiteData.activity_choices_help],
+               'life_stage_choices': list(models.FocalSiteData.LIFE_STAGE_CHOICES),
+               'activity_choices': list(models.FocalSiteData.ACTIVITY_CHOICES)}
+
+    # Process the handsontable data
+    if request.is_ajax():
+        # Retrieve the hot_data
+        hot_data = json.loads(request.POST['hot_data'])
+
+        # Create the metadata
+        metadata = models.MetaData(project=project, uploader=request.user)
+        metadata.save()
+
+        # We mustn't save anything unless they are all ok, so wrap in a try
+        try:
+            objects = []
+            for row in hot_data:
+                print(row)
+                # Often the last row seems to be blank, so if row[0 - 5] is blank skip it
+                if all(r is None for r in row):
+                    continue
+
+                # Try get the taxa by scientific name
+                taxon = models.Taxon.objects.filter(name=row[0])
+
+                if not taxon:
+                    # If that doesn't work try get it by common name
+                    taxon = models.Taxon.objects.filter(vernacular_name=row[0])
+
+                    if not taxon:
+                        raise ValueError('No taxa found, something has gone wrong')
+                print('taxon')
+
+                taxon = taxon[0]
+
+                # Abundance/count
+                count = row[1]
+
+                # Get a datetime from the time + date
+                observed = datetime.strptime(row[2], '%d/%m/%Y') + timedelta(hours=row[3])
+
+                # Life stage
+                life_stage_choices = {v: k for k, v in dict(models.FocalSiteData.LIFE_STAGE_CHOICES).items()}
+                life_stage = life_stage_choices[row[4]]  # At this stage it will raise a KeyError if the key is not found
+
+                # Activity
+                activity_choices = {v: k for k, v in dict(models.FocalSiteData.ACTIVITY_CHOICES).items()}
+                activity = activity_choices[row[5]]  # At this stage it will raise a KeyError if the key is not found
+
+                # Create - does this validate? i hope so
+                obj = models.FocalSiteData(metadata=metadata,
+                                           taxon=taxon,
+                                           observed=observed,
+                                           abundance=count,
+                                           life_stage=life_stage,
+                                           activity=activity,
+                                           focal_site_id=focal_site_pk)  # Instead of focal_site = obj
+
+                # Add to the list
+                objects.append(obj)
+
+            # Now we have successfully got all our taxa sorted, we save them
+            for obj in objects:
+                obj.save()
+
+            # Return how many saved (should always be all, just to provide reassurance to them)
+            return JsonResponse({'objects_saved': len(objects), 'metadata_pk': metadata.pk})
+        except ValueError as e:
+            # Delete the metadata
+            metadata.delete()
+
+            # Send error back to form
+            return JsonResponse({'error': e.args()}, status=400)
+
+    # Otherwise, if we are showing the page for the first time...
+    # Get all the taxa
+    taxa = models.Taxon.objects.filter(rank__in=[models.Taxon.GENUS, models.Taxon.SPECIES, models.Taxon.SUBSPECIES]) | \
+           models.Taxon.objects.filter(id=0)
+
+    # Get the scientific and vernacular names separately
+    scientific_names = list(taxa.values_list('name', flat=True).distinct())
+    vernacular_names = list(taxa.values_list('vernacular_name', flat=True).distinct())
+
+    # Merge the two together, note it's going into a dropdown so can't have duplicate values anyway
+    # When we reinterpret it coming back we can just assume it's a scientific name first and vernacular second
+    names = scientific_names + vernacular_names
+
+    # Get rid of the none value as it throws the js out (creeps in with vernacular names)
+    names = [n for n in names if n is not None]
+    context['taxa'] = names
+
+    # Show the template
+    return render(request, 'core/focal_site_data_create.html', context)
+
+
+def fatality_data_create(request, project_pk):
+    # Retrieve the project for passing to context and the form
+    project = models.Project.objects.get(pk=project_pk)
+
+    # Add the data-type-specific headers and count types for handsontable to the context
+    context = {'project': project,
+               'headers': [models.FatalityData.taxon_help,
+                           models.FatalityData.found_help,
+                           'Time (24h)<br>Round to hr',  # Split up date and time
+                           'Latitude',
+                           'Longitude',
+                           models.FatalityData.cause_of_death_help],
+               'cause_of_death_choices': list(models.FatalityData.cause_of_death_choices)}
+
+    # Process the handsontable data
+    if request.is_ajax():
+        # Retrieve the hot_data
+        hot_data = json.loads(request.POST['hot_data'])
+
+        # Create the metadata
+        metadata = models.MetaData(project=project, uploader=request.user)
+        metadata.save()
+
+        # We mustn't save anything unless they are all ok, so wrap in a try
+        try:
+            objects = []
+            for row in hot_data:
+                print(row)
+                # Often the last row seems to be blank, so if row[0 - 5] is blank skip it
+                if all(r is None for r in row):
+                    continue
+
+                # Try get the taxa by scientific name
+                taxon = models.Taxon.objects.filter(name=row[0])
+
+                if not taxon:
+                    # If that doesn't work try get it by common name
+                    taxon = models.Taxon.objects.filter(vernacular_name=row[0])
+
+                    if not taxon:
+                        raise ValueError('No taxa found, something has gone wrong')
+
+                taxon = taxon[0]
+
+                # Get a datetime from the time + date
+                found = datetime.strptime(row[1], '%d/%m/%Y') + timedelta(hours=row[2])
+
+                # Point
+                coordinates = Point(row[4], row[3])
+
+                # Cause of death
+                cause_of_death_choices = {v: k for k, v in dict(models.FatalityData.cause_of_death_choices).items()}
+                cause_of_death = cause_of_death_choices[row[5]]  # At this stage it will raise a KeyError if the key is not found
+
+                # Create - does this validate? i hope so
+                obj = models.FatalityData(metadata=metadata,
+                                          taxon=taxon,
+                                          found=found,
+                                          coordinates=coordinates,
+                                          cause_of_death=cause_of_death)
+
+                # Add to the list
+                objects.append(obj)
+
+            # Now we have successfully got all our taxa sorted, we save them
+            for obj in objects:
+                obj.save()
+
+            # Return how many saved (should always be all, just to provide reassurance to them)
+            return JsonResponse({'objects_saved': len(objects), 'metadata_pk': metadata.pk})
+        except ValueError as e:
+            # Delete the metadata
+            metadata.delete()
+
+            # Send error back to form
+            return JsonResponse({'error': e.args()}, status=400)
+
+    # Otherwise, if we are showing the page for the first time...
+    # Get all the taxa
+    taxa = models.Taxon.objects.filter(rank__in=[models.Taxon.GENUS, models.Taxon.SPECIES, models.Taxon.SUBSPECIES]) | \
+           models.Taxon.objects.filter(id=0)
+
+    # Get the scientific and vernacular names separately
+    scientific_names = list(taxa.values_list('name', flat=True).distinct())
+    vernacular_names = list(taxa.values_list('vernacular_name', flat=True).distinct())
+
+    # Merge the two together, note it's going into a dropdown so can't have duplicate values anyway
+    # When we reinterpret it coming back we can just assume it's a scientific name first and vernacular second
+    names = scientific_names + vernacular_names
+
+    # Get rid of the none value as it throws the js out (creeps in with vernacular names)
+    names = [n for n in names if n is not None]
+    context['taxa'] = names
+
+    # Show the template
+    return render(request, 'core/fatality_data_create.html', context)

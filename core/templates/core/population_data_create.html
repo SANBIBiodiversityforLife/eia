@@ -1,0 +1,151 @@
+{% extends "core/_base_dataset_create_form.html" %}
+{% load bootstrap3 %}
+{% load leaflet_tags %}
+{% load static %}
+
+{% block sub-css %}
+<link href='{% static "node_modules/intro.js/minified/introjs.min.css" %}' rel="stylesheet">
+<style>
+.introjs-fixParent {
+  position: relative !important;
+}
+</style>
+{% leaflet_js plugins="forms,draw" %}
+{% leaflet_css plugins="forms,draw" %}
+{% endblock %}
+
+{% block parent-link %}<a href="{% url 'population_data' project.id %}">Population data</a>{% endblock %}
+{% block breadcrumb-text %}{% block header-detail-text %}population{% endblock %}{% endblock %}
+
+{% block upload-form %}
+  <form role="form" class="data-upload-form" id="populationLocationForm" action="" method="post">{% csrf_token %}
+    <div class="step" id="step1">
+      <span class="step-number">1</span>
+      <h2>Where was your data collected from?</h2>
+      <p>The project area is pre-loaded by default. If your data comes from a smaller area within the project area,
+        <a href="#" onClick="startIntro()"  data-toggle="tooltip" data-placement="right" title="Click to learn how to use our maps">load a KML or GPX, or draw it in on the map
+          <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span></a>.</p>
+      {% bootstrap_form_errors map_form %}
+      {% bootstrap_form map_form %}
+      <a id="stepLink" href="#step2" class="btn btn-default">
+        <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span> Next
+      </a>
+    </div>
+    <div class="step" id="step2">
+      <span class="step-number">2</span>
+      <h2>Add your data</h2>
+      <div class="step-instructions">
+        <ul class="list-unstyled">
+          <li>
+            <span class="glyphicon glyphicon-stats" aria-hidden="true"></span>
+            This should be your <strong>estimates of the numbers (absolute abundance/density or relative abundance)</strong>
+            of each species in the area you surveyed.
+          </li>
+          <li>
+            <span class="glyphicon glyphicon-tree-deciduous" aria-hidden="true"></span>
+            The survey techniques used <strong>must correspond to the latest edition of the
+            <a href="#">Birds and Wind-Energy Best-Practice Guidelines</a></strong>, (e.g. walked and driven transects,
+            fixed-point counts, checklist surveys)
+          </li>
+          <li>
+            <span class="glyphicon glyphicon-indent-left" aria-hidden="true"></span>
+            <strong>More rows</strong> will get added automatically to the bottom as you paste or enter data.
+          </li>
+          <li>
+            <span class="glyphicon glyphicon-fullscreen" aria-hidden="true"></span>
+            You may <strong>split up your data</strong> and upload it in as many sections as you wish.
+          </li>
+          <li>
+            <span class="glyphicon glyphicon-warning-sign" aria-hidden="true"></span>
+            If you have surveyed a <strong>focal site</strong> (e.g. a wetland, dam or roosting tree),
+            please <a href="{% url 'focal_site_data' project.id %}">upload these data separately using the focal site form</a>.
+          </li>
+        </ul>
+      </div>
+      <div id="hot-wrapper"><div id="hot"></div></div>
+      <p><strong>Finished? Once you have pressed "Upload" you will be given the opportunity to add your raw data sheets or any documentation you might feel is useful.</strong></p>
+      <button id="submitData" type="button" class="btn btn-primary">Upload</button>
+      <button type="button" class="btn btn-default">Cancel</button>
+    </div>
+  </form>
+{% endblock %}
+
+<!-- This success URL gets changed to the correct metadata via js when the AJAX comes back, see init_hot.js -->
+{% block success-url %}{% url 'population_data' project.id %}{% endblock %}
+
+{% block sub-js %}
+<!-- Map help -->
+<script src='{% static "node_modules/intro.js/minified/intro.min.js" %}'></script>
+<script src='{% static "core/js/map-help.js" %}'></script>
+
+<!-- Map -->
+<script src='{% static "leaflet-filelayer/leaflet.filelayer.js" %}'></script>
+<script src='{% static "leaflet-filelayer/togeojson/togeojson.js" %}'></script>
+<script src='{% static "core/js/eia-filelayer.js" %}'></script>
+
+<!-- Hands On Table -->
+<script type="text/javascript">
+$(document).ready(function() {
+    // Tooltips
+    $(function () {
+      $('[data-toggle="tooltip"]').tooltip()
+    })
+
+    // Handsontable options
+    hotOptions['colWidths'] = [240, 50, 100, 90, 80, 130];
+    hotOptions['columns'] = [
+      {
+        type: 'autocomplete',
+        source: {{ taxa|safe }},
+        strict: true
+      },
+      {
+        type: 'numeric'
+      },
+      {
+        type: 'date',
+        dateFormat: 'DD/MM/YYYY',
+        correctFormat: true,
+        defaultDate: '01/01/2000'
+      },
+      {
+        type: 'numeric',
+        format: '00',
+        default: '00',
+        validator: /^([01]?[0-9]|2[0-3])$/
+      },
+      {
+        type: 'autocomplete',
+        source: {{ count_types|safe }},
+        strict: true
+      },
+      {
+        validator: /^\d\d?\s*-\s*\d\d?$/
+      }
+    ];
+
+    // We only want to initalise handsontable once the div is visible
+    $('#stepLink').click(function() {
+      // Show the div
+      $('#step2').show('fast', function() {
+        // Function stored in init_hot.js
+        init_hot();
+
+        // Activate tooltips
+        // Add IDs onto all the <th>s
+        //$('table.htCore>thead>tr>th').attr('id', function(i) {
+        //  return 'tablehead' + (i + 1);
+        //});
+      });
+
+      // Smooth scrolling for the next button
+      $('html, body').animate({
+          scrollTop: $( $.attr(this, 'href') ).offset().top
+      }, 500);
+
+      // StepLink click should return false
+      return false;
+    });
+  })
+</script>
+{% endblock %}

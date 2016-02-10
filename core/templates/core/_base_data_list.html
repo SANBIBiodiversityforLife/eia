@@ -1,0 +1,186 @@
+{% extends "core/_base_project_detail.html" %}
+{% load static %}
+{% load bootstrap3 %}
+
+{% block sub-breadcrumb %}
+{% with request.resolver_match.url_name as url_name %}
+  <li><a href="{% url 'project_detail' project.id %}">{{ project.name }}</a></li>
+  <li class="active">
+    {% if url_name == 'population_data' %}
+      Population data
+    {% elif url_name == 'focal_site_data' %}
+      Focal site data
+    {% elif url_name == 'fatality_data' %}
+      Fatality data
+    {% endif %}
+  </li>
+{% endwith %}
+{% endblock %}
+
+{% block sub-content %}
+  {% block map %}{% endblock %}
+  {% if data_set %}
+    <form id="selectDataset" method="post">{% csrf_token %}
+      {% bootstrap_form form %}
+    </form>
+
+    {% block table %}{% endblock %}
+
+    <!-- Flag dataset alert -->
+    <div class="alert alert-warning" role="alert">
+      <p>
+        Does this dataset look incorrect?
+        <a id="flagDataset" href="#" type="button"
+           class="btn btn-sm btn-danger"  data-toggle="modal" data-target="#flagModal">
+          <span class="glyphicon glyphicon-flag" aria-hidden="true"></span> Flag it for removal by an administrator
+        </a>
+      </p>
+    </div>
+
+    <!-- Documentation -->
+    <hr style="margin: 50px 0;">
+    <h4 id="documentation">
+      Documentation
+      {% if perms.core.contributor %}
+      <a id="addDocument" href="#" type="button" class="btn btn-sm btn-success"  data-toggle="modal" data-target="#documentModal">
+        <span class="glyphicon glyphicon-file" aria-hidden="true"></span> Add documentation
+      </a>
+      {% endif %}
+    </h4>
+    <table id="documentList" class="table table-striped">
+      <thead>
+        <tr>
+          <th>Document</th>
+          <th>File type</th>
+          <th>Uploader</th>
+          <th>Uploaded on</th>
+          <th>Document type</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% if documents %}
+        {% for document in documents %}
+        {{ document.get_table_display|safe }}
+        {% endfor %}
+      {% else %}
+        <tr id="noDocumentationMessage"><td colspan="5">No documentation uploaded yet.</td></tr>
+      {% endif %}
+      </tbody>
+    </table>
+
+    <!-- Flag for removal modal -->
+    <div class="modal fade" id="flagModal" tabindex="-1" role="dialog" aria-labelledby="flagModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="flagModalLabel">Flag dataset for removal</h4>
+          </div>
+          <form id="flagForRemoval" method="post" action="{% url 'flag_for_removal' project.pk metadata_pk %}">{% csrf_token %}
+            <div class="modal-body">
+              <p>Why should this dataset be removed?</p>
+              {% bootstrap_form flag_for_removal_form %}
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              <input type="submit" class="btn btn-danger" id="flagForRemovalButton" value="Flag for removal">
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add document modal -->
+    <div class="modal fade" id="documentModal" tabindex="-1" role="dialog" aria-labelledby="documentModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="documentModalLabel">Add documentation (e.g. raw data in spreadsheets, etc)</h4>
+          </div>
+          <form id="addDocumentForm" enctype="multipart/form-data" class="form-horizontal" method="post" action="{% url 'add_metadata_document' project.pk metadata_pk %}">{% csrf_token %}
+            <div class="modal-body">
+              <div class="modal-body-form">
+                {% bootstrap_form_errors create_document_form layout='horizontal' horizontal_label_class='col-md-3' horizontal_field_class='col-md-8' %}
+                {% bootstrap_form create_document_form layout='horizontal' horizontal_label_class='col-md-3' horizontal_field_class='col-md-8' %}
+              </div>
+              <div class="message-success">
+                Document uploaded.
+              </div>
+              <div id="message-failure">
+              </div>
+            </div>
+            <div class="modal-footer">
+              {% buttons submit='Add document' layout='horizontal' %}
+              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              {% endbuttons %}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  {% else %}
+  {% block no-date-message %}No data uploaded yet.{% endblock %}
+  {% endif %}
+{% endblock sub-content %}
+
+{% block js %}
+  <script src='{% static "core/js/jquery.form.min.js" %}'></script>
+  <script type="text/javascript">
+    $(document).ready(function() {
+      $('#id_datasets').change(function() {
+        $('form#selectDataset').submit();
+      });
+
+      // Ajax the forms
+      var options = {
+          dataType: 'json',
+          success: function(data) {
+              // Change the header
+              $('#flagForRemoval .modal-body').html('Dataset has been flagged for removal with an administrator.');
+              $('#flagForRemovalButton').hide();
+          }
+      }
+      $('#flagForRemoval').ajaxForm(options);
+      var options = {
+        dataType: 'json',
+        success: function(data) {
+          // Change the header
+          $('#addDocumentForm .modal-body-form').hide();
+          $('#addDocumentForm .message-success').show();
+
+          // If this the first time they're adding docs, hide the no doc message behind the modal
+          $('#noDocumentationMessage').hide();
+
+          // Append the new doc
+          $('#documentList').append('<li>' + data['document'] + '</li>');
+
+          // Hide the upload button
+          $('#addDocumentForm .modal-footer .btn-primary').hide();
+        },
+        error: function(jqXHR, textStatus, errorThrown){
+          console.log('hi');
+          $('#addDocumentForm .modal-body-form').hide();
+          $('#addDocumentForm .message-failure').show();
+          console.log(jqXHR);
+          console.log(textStatus);
+          console.log(errorThrown);
+        }
+      }
+      $('#addDocumentForm').ajaxForm(options);
+
+      // Reset the document modal
+      $("#documentModal").on("hidden.bs.modal", function(){
+        // Reset the modal
+        $('#addDocumentForm .modal-body-form').show();
+        $('#addDocumentForm .message-success').hide();
+        $('#addDocumentForm .message-failure').hide();
+        $('#addDocumentForm .modal-footer .btn-primary').show();
+
+        // Reset the form fields
+        $('#addDocumentForm')[0].reset();
+      });
+    });
+  </script>
+  {% block sub-js %}{% endblock %}
+{% endblock js %}

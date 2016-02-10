@@ -17,6 +17,8 @@ from django.conf.urls import include, url
 from django.contrib import admin
 from core import views, spreadsheet_creation
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     # Django allauth
@@ -43,7 +45,6 @@ urlpatterns = [
     url(r'^project/create/$', login_required(views.ProjectCreate.as_view()), name='project_create'),
     url(r'^project/update/(?P<pk>[0-9]+)/$', login_required(views.ProjectUpdate.as_view()), name='project_update'),
     url(r'^project/update-operational/(?P<pk>[0-9]+)/$', login_required(views.ProjectUpdateOperationalInfo.as_view()), name='project_update_operational_info'),
-    url(r'^project_delete/(?P<pk>[0-9]+)/$', login_required(views.ProjectDelete.as_view()), name='project_delete'),
 
     # Data view URLS
     url(r'^project/(?P<pk>[0-9]+)/population_data/$', login_required(views.population_data), name='population_data'),
@@ -55,7 +56,10 @@ urlpatterns = [
     url(r'^project/(?P<pk>[0-9]+)/fatality_data/(?P<metadata_pk>[0-9]+)$', login_required(views.fatality_data), name='fatality_data'),
 
     # Flag for removal
-    url(r'^project/(?P<pk>[0-9]+)/population_data/flag_for_removal$', login_required(views.flag_for_removal), name='flag_for_removal'),
+    url(r'^project/(?P<pk>[0-9]+)/(?P<metadata_pk>[0-9]+)/flag_for_removal$', login_required(views.flag_for_removal), name='flag_for_removal'),
+
+    # Add a document
+    url(r'^project/(?P<pk>[0-9]+)/(?P<metadata_pk>[0-9]+)/add_metadata_document$', login_required(views.add_metadata_document), name='add_metadata_document'),
 
     # Developer
     url(r'^developer/create/$', login_required(views.DeveloperCreate.as_view()), name='developer_create'),
@@ -69,14 +73,16 @@ urlpatterns = [
         login_required(views.FocalSiteCreate.as_view()), name='focal_site_create'),
 
     # Data add URLs
-    url(r'^project/(?P<project_pk>[0-9]+)/data/', login_required(views.DataList.as_view()), name='data_list'),
     url(r'^project/(?P<project_pk>[0-9]+)/population_data/create/',
-        login_required(views.PopulationDataCreateView.as_view()),
+        login_required(views.population_data_create),
         name='population_data_create'),
+    #url(r'^project/(?P<project_pk>[0-9]+)/population_data/create/',
+    #    login_required(views.PopulationDataCreateView.as_view()),
+    #    name='population_data_create'),
     url(r'^project/(?P<project_pk>[0-9]+)/focal_site_data/focal_site/(?P<focal_site_pk>[0-9]+)/create/',
-        login_required(views.FocalSiteDataCreateView.as_view()),
+        login_required(views.focal_site_data_create),
         name='focal_site_data_create'),
     url(r'^project/(?P<project_pk>[0-9]+)/fatality_data/create/',
-        login_required(views.FatalityDataCreateView.as_view()),
+        login_required(views.fatality_data_create),
         name='fatality_data_create'),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

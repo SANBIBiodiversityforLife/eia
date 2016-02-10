@@ -5,9 +5,11 @@ header { margin: 10px 0; }
     border-bottom: 1px solid #eee;
 }
 
+/*
 .alert ol li {
     padding-top: 0.85em;
 }
+
 
 .steps>div>div:hover, .steps a#step-wrapper:hover {
     background-color: #fff084;
@@ -60,7 +62,7 @@ form#upload-form .form-container {
     border: 1px solid #EFEFEF;
     border-radius: 10px;
     padding: 20px;
-}
+}*/
 
 footer {
     text-align: center;
@@ -109,4 +111,103 @@ h3 {
 }
 dd, dt {
     line-height: 2.8em;
+}
+
+/* Form stuff */
+#upload-form-wrapper h2 {
+    font-size: 22px;
+}
+#upload-form-wrapper #step2 {
+    background-color: #FFF5AA;
+}
+#upload-form-wrapper .step ul, #upload-form-wrapper .step p {
+    width: 700px;
+    margin: 10px auto;
+}
+#upload-form-wrapper .step ul li:hover {
+    background-color: #fffce5;
+}
+#upload-form-wrapper .step ul li {
+    text-align: left;
+    padding: 15px 0 15px 0;
+    border-bottom: 1px dashed rgba(51, 51, 51, 0.25);
+}
+#upload-form-wrapper .step ul li:last-child {
+    border-bottom: 0;
+}
+#upload-form-wrapper .step {
+    padding: 15px;
+    margin: 0 10% 10px 10%;
+    text-align: center;
+    background-color: #FFFBCC;
+}
+#upload-form-wrapper #step3 .form-group {
+    overflow: auto;
+}
+#upload-form-wrapper #step3 h2 {
+    margin-bottom: 40px;
+}
+#upload-form-wrapper span.help-block {
+    text-align: left;
+}
+#upload-form-wrapper label {
+    text-align: right;
+}
+#upload-form-wrapper .step-number {
+    border: 1px solid rgb(255, 232, 204);
+    border-radius: 60px;
+    padding: 5px 15px;
+    font-weight:  bold;
+    font-size: 30px;
+    color: rgba(128, 128, 128, 0.38);
+    background-color: white;
+}
+#upload-form-wrapper #id_location_map {
+    margin: 0 auto;
+}
+#upload-form-wrapper #step2,
+#upload-form-wrapper #step3 {
+    display: none;
+}
+.data-upload-form #id_location_map {
+    max-width: 700px;
+}
+/* Intro JS number breaks if it doesn't have a normal line height */
+.introjs-helperNumberLayer {
+    line-height: 1em !important;
+    font-size: 10px !important;
+}
+
+#hot-wrapper {
+    -webkit-box-align:center;
+    -webkit-box-pack:center;
+    display:-webkit-box;
+    margin-bottom: 15px;
+}
+#hot {
+    display: block;
+    text-align: left;
+}
+
+/* Throbber */
+.glyphicon.spinning {
+    animation: spin 1s infinite linear;
+    -webkit-animation: spin2 1s infinite linear;
+}
+
+@keyframes spin {
+    from { transform: scale(1) rotate(0deg); }
+    to { transform: scale(1) rotate(360deg); }
+}
+
+@-webkit-keyframes spin2 {
+    from { -webkit-transform: rotate(0deg); }
+    to { -webkit-transform: rotate(360deg); }
+}
+
+.modal .message-success,
+.modal .message-failure,
+#modalMessageServerFailure,
+#modalMessageSuccess {
+    display: none;
 }

@@ -1,5 +1,6 @@
 from django.utils.safestring import mark_safe
-from django import forms
+#from django import forms
+from django.contrib.gis import forms
 from django.db import models
 #from django.core.exceptions import DoesNotExist
 from leaflet.forms.widgets import LeafletWidget
@@ -91,6 +92,12 @@ class EquipmentMakeCreateForm(forms.ModelForm):
         fields = ('name',)
 
 
+class DocumentCreateForm(forms.ModelForm):
+    class Meta:
+        model = models.Document
+        fields = ('name', 'document', 'document_type')
+
+
 class FocalSiteCreateForm(forms.ModelForm):
     class Meta:
         model = models.FocalSite
@@ -140,10 +147,6 @@ class ProjectDeleteForm(forms.ModelForm):
         widgets = {'location': LeafletWidget()}
 
 
-class DataUploadForm(forms.Form):
-    spreadsheet = forms.FileField()
-
-
 class DataViewForm(forms.Form):
     datasets = forms.ChoiceField(label='Choose a dataset to view', choices=())
 
@@ -156,8 +159,7 @@ class DataViewForm(forms.Form):
 class RemovalFlagCreateForm(forms.ModelForm):
     class Meta:
         model = models.RemovalFlag
-        fields = ('reason', 'requested_by', 'metadata')
-        widgets = {'requested_by': forms.HiddenInput(), 'metadata': forms.HiddenInput()}
+        fields = ('reason',)
 
 
 def write_error(main_sheet, row_number, error_message):
@@ -180,7 +182,7 @@ class MetaDataCreateForm(forms.ModelForm):
 
     class Meta:
         model = models.MetaData
-        fields = ('upload_data', 'control_data')
+        fields = ('upload_data',)
 
     # Gets overwritten
     def create_data_object(self, metadata, taxa, cells):
@@ -294,7 +296,19 @@ class MetaDataCreateForm(forms.ModelForm):
             return False
 
 
-class PopulationDataCreateForm(MetaDataCreateForm):
+class PopulationDataCreateForm(forms.Form):
+    location = forms.PolygonField(widget=LeafletWidget(), label='')
+
+    def __init__(self, *args, **kwargs):
+        if 'project_polygon' in kwargs:
+            project_polygon = kwargs.pop('project_polygon')
+            super(PopulationDataCreateForm, self).__init__(*args, **kwargs)
+            self.fields['location'].initial = project_polygon
+        else:
+            super(PopulationDataCreateForm, self).__init__(*args, **kwargs)
+
+
+class OldPopulationDataCreateForm(MetaDataCreateForm):
     number_of_cols = 5
 
     def create_data_object(self, metadata, taxa, cells):

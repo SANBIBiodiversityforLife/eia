@@ -1,0 +1,34 @@
+{% extends "core/_base_data_list.html" %}
+
+{% block sub-content-heading %}
+  Species population count, census and estimate data
+  {% if perms.core.contributor %}<a href="{% url 'population_data_create' project.id %}" type="button" class="btn btn-info pull-right">
+  <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add population data
+  </a>{% endif %}
+{% endblock %}
+
+{% block table %}
+  <!-- Population data table -->
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Species</th>
+        <th>Observed</th>
+        <th>Abundance count</th>
+        <th>Abundance type</th>
+        <th>Flight height</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for data in data_set %}
+      <tr>
+        <td>{{ data.taxon }}{% if data.taxon.vernacular_name %} ({{ data.taxon.vernacular_name }}){% endif %}</td>
+        <td>{{ data.observed }}</td>
+        <td>{{ data.abundance }}</td>
+        <td>{{ data.get_abundance_type_display }}</td>
+        <td>{{ data.get_flight_height_display }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

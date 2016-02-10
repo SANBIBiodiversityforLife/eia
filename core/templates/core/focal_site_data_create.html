@@ -1,0 +1,86 @@
+{% extends "core/_base_dataset_create_form.html" %}
+{% load static %}
+
+{% block parent-link %}<a href="{% url 'focal_site_data' project.id %}">Focal site data</a>{% endblock %}
+{% block breadcrumb-text %}{% block header-detail-text %}focal site{% endblock %}{% endblock %}
+
+{% block upload-form %}
+  <form role="form" class="data-upload-form" action="" method="post">{% csrf_token %}
+    <div class="step" id="step1">
+      <div class="step-instructions">
+        <ul class="list-unstyled">
+          <li>
+            <span class="glyphicon glyphicon-stats" aria-hidden="true"></span>
+            This should be your <strong>estimates of the numbers (absolute abundance/density or relative abundance)</strong>
+            of each species in this focal site.
+          </li>
+          <li>
+            <span class="glyphicon glyphicon-tree-deciduous" aria-hidden="true"></span>
+            The survey techniques used <strong>must correspond to the latest edition of the
+            <a href="#">Birds and Wind-Energy Best-Practice Guidelines</a></strong>, (e.g. walked and driven transects,
+            fixed-point counts, checklist surveys)
+          </li>
+          <li>
+            <span class="glyphicon glyphicon-indent-left" aria-hidden="true"></span>
+            <strong>More rows</strong> will get added automatically to the bottom as you paste or enter data.
+          </li>
+          <li>
+            <span class="glyphicon glyphicon-fullscreen" aria-hidden="true"></span>
+            You may <strong>split up your data</strong> and upload it in as many sections as you wish.
+          </li>
+        </ul>
+      </div>
+      <div id="hot-wrapper"><div id="hot"></div></div>
+      <p><strong>Finished? Once you have pressed "Upload" you will be given the opportunity to add your raw data sheets or any documentation you might feel is useful.</strong></p>
+      <button id="submitData" type="button" class="btn btn-primary">Upload</button>
+      <button type="button" class="btn btn-default">Cancel</button>
+    </div>
+  </form>
+{% endblock %}
+
+<!-- This success URL gets changed to the correct metadata via js when the AJAX comes back, see init_hot.js -->
+{% block success-url %}{% url 'focal_site_data' project.id focal_site_pk %}{% endblock %}
+
+{% block sub-js %}
+<script type="text/javascript">
+$(document).ready(function() {
+    // Handsontable options
+    hotOptions['colWidths'] = [240, 80, 100, 90, 80, 180];
+    hotOptions['columns'] = [
+      {
+        type: 'autocomplete',
+        source: {{ taxa|safe }},
+        strict: true
+      },
+      {
+        type: 'numeric'
+      },
+      {
+        type: 'date',
+        dateFormat: 'DD/MM/YYYY',
+        correctFormat: true,
+        defaultDate: '01/01/2000'
+      },
+      {
+        type: 'numeric',
+        format: '00',
+        default: '00',
+        validator: /^([01]?[0-9]|2[0-3])$/
+      },
+      {
+        type: 'autocomplete',
+        source: {{ life_stage_choices|safe }},
+        strict: true
+      },
+      {
+        type: 'autocomplete',
+        source: {{ activity_choices|safe }},
+        strict: true
+      }
+    ];
+
+    // No other form here, initialise handsontable straight away
+    init_hot();
+  })
+</script>
+{% endblock %}

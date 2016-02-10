@@ -1,4 +1,6 @@
 $(document).ready(function() {
+   headers =
+/*
     // Set up the datetimepicker
     $('.datepicker').datetimepicker({step:30});
 
@@ -69,5 +71,5 @@ $(document).ready(function() {
             $('#modalMessageServerFailure').fadeIn();
         }
     }
-    $('#upload-form').ajaxForm(options);
+    $('#upload-form').ajaxForm(options);*/
 })

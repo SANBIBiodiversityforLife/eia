@@ -119,7 +119,7 @@ class Project(models.Model):
         )
 
 
-class PreviousProjectNames(models.Model):
+class PreviousProjectName(models.Model):
     """
     Renewable energy projects frequently change name. A list of all the previous names needs to be held for search
     purposes.
@@ -129,7 +129,7 @@ class PreviousProjectNames(models.Model):
     stopped = models.DateTimeField(auto_now_add=True)
 
 
-class PreviousDevelopers(models.Model):
+class PreviousDeveloper(models.Model):
     """
     Developers go bust and change projects, so we need to keep historical records of all the developers who worked on
     a particular project.
@@ -137,34 +137,6 @@ class PreviousDevelopers(models.Model):
     developer = models.ForeignKey(Developer)
     project = models.ForeignKey(Project)
     stopped = models.DateTimeField(auto_now_add=True)
-
-
-def document_upload_path(instance, filename):
-    filename_parts = filename.split('.')
-    extension = filename_parts[1]
-    cleaned_name = re.sub('\s+', '_', instance.name)
-    return 'uploads/{0}.{1}'.format(cleaned_name, extension)
-
-
-class Documents(models.Model):
-    """
-    Scanned in documents should be uploadable.
-    Note that DEA are collecting EIA reports separately, but until we get the two linked up this can be used to store
-    EIA reports as well.
-    """
-    name = models.CharField(max_length=20, help_text='A short, descriptive name for the document')
-    project = models.ForeignKey(Project)
-    uploaded = models.DateTimeField(auto_now_add=True)
-    uploader = models.ForeignKey(User)
-    document = models.FileField(upload_to=document_upload_path)
-
-    EIA = 'E'
-    OTHER = 'O'
-    DOCUMENT_TYPE_CHOICES = (
-        (EIA, 'EIA report'),
-        (OTHER, 'Other')
-    )
-    document_type = models.CharField(max_length=1, choices=DOCUMENT_TYPE_CHOICES, default=EIA)
 
 
 class Taxon(MPTTModel):
@@ -212,8 +184,6 @@ class Taxon(MPTTModel):
     )
     rank = models.CharField(max_length=2, choices=RANK_CHOICES, default=SPECIES)
 
-    # Often we want to just refer to actual species or subspecies
-
     # Red list info will come from the IUCN using the API http://api.iucnredlist.org/index/species/Aves.js
     red_list_choices = (
         ('EX', 'Extinct'),
@@ -230,6 +200,10 @@ class Taxon(MPTTModel):
     # I am not sure about where sensitive species will come from
     sensitive = models.BooleanField(default=False)
 
+    # This is used when serializing data so that we don't get a nasty meaningless number as output
+    def natural_key(self):
+        return self.__str__()
+
     # Required for the MPTT model class
     class MPTTMeta:
         order_insertion_by = ['name']
@@ -243,10 +217,10 @@ class FocalSite(models.Model):
     Focal sites are locations of particular interest in projects.
     Data is collected and stored against each focal site.
     """
-    location = models.PolygonField(help_text='The area of the focal site')
+    location = models.PolygonField(help_text='The area of the focal site, should be within 30km of the project area or it will not be associated with this project.')
     objects = models.GeoManager()
     name = models.CharField(max_length=50, help_text='A name by which the focal site can be easily identified')
-    sensitive = models.BooleanField(default=False)
+    sensitive = models.BooleanField(default=False, help_text='If the focal site concerns sensitive species and should not be visible to the public, select this.')
 
     # Perhaps projects don't have to be manually associated with focal sites, can just use GIS?
     # project = models.ManyToManyField(Project, help_text='Project(s) which are associated with this focal site')
@@ -255,11 +229,13 @@ class FocalSite(models.Model):
     COURTSHIP = 'C'
     FEEDING = 'F'
     OTHER = 'O'
+    NOT_SPECIFIED = 'N'
     activity_choices = (
         (ROOST, 'Roost'),
         (COURTSHIP, 'Display/courtship area'),
         (FEEDING, 'Feeding ground'),
-        (OTHER, 'Other')
+        (OTHER, 'Other'),
+        (NOT_SPECIFIED, 'N')
     )
     activity = models.CharField(max_length=1, choices=activity_choices)
 
@@ -299,7 +275,7 @@ class FocalSite(models.Model):
         return reverse('focal_site_data', kwargs={'pk': self.project.pk})
 
     # def clean(self):
-        # Coordinate cannot be outside the bounds of the project
+        # Coordinate cannot be more than 50km outside the bounds of the project TODO implement this
         # if not self.project.location.contains(self.location):
         #    raise ValidationError({'location': 'Focal sites must be within the project bounds.'})
 
@@ -309,31 +285,30 @@ class MetaData(models.Model):
     """
     project = models.ForeignKey(Project)
     flagged_for_query = models.BooleanField(default=False)
-    control_data = models.BooleanField("This is control data", default=False)
     uploader = models.ForeignKey(User)
     uploaded_on = models.DateTimeField(auto_now_add=True)
 
     # Following two functions are taken from
     # http://stackoverflow.com/questions/7366363/adding-custom-django-model-validation
     # See also the docs https://docs.djangoproject.com/en/1.8/ref/models/instances/
-    def clean(self):
-        if self.collected_from >= self.collected_to:
-            raise ValidationError({'collected_from': 'The collected from date must be earlier than the to date'})
-        super(MetaData, self).clean()
+    #def clean(self):
+    #    if self.collected_from >= self.collected_to:
+    #        raise ValidationError({'collected_from': 'The collected from date must be earlier than the to date'})
+    #    super(MetaData, self).clean()
 
     def save(self, *args, **kwargs):
         self.full_clean()
         super(MetaData, self).save(*args, **kwargs)
 
-    def is_post_construction(self):
-        if self.project.construction_date:
-            return self.collected_from.date() > self.project.construction_date
-        else:
-            # There is no construction date up yet
-            return False
+    #def is_post_construction(self):
+    #    if self.project.construction_date:
+    #        return self.collected_from.date() > self.project.construction_date
+    #    else:
+    #        # There is no construction date up yet
+    #        return False
 
     def __str__(self):
-        text = 'Collected: ' + formats.date_format(self.collected_from, "DATETIME_FORMAT") + ' - ' + \
+        """text = 'Collected: ' + formats.date_format(self.collected_from, "DATETIME_FORMAT") + ' - ' + \
                formats.date_format(self.collected_to, "DATETIME_FORMAT")
         if self.is_post_construction():
             text += '(post construction)'
@@ -342,8 +317,9 @@ class MetaData(models.Model):
         text += ' | Uploaded by ' + self.uploader.first_name + ' ' + self.uploader.last_name + ' on ' + \
                 formats.date_format(self.uploaded_on, "DATETIME_FORMAT")
         if self.control_data:
-            text += ' (control data)'
-        return text
+            text += ' (control data)'"""
+        return 'Uploaded : ' + formats.date_format(self.uploaded_on, "DATETIME_FORMAT") + ' by ' + \
+               self.uploader.first_name + ' ' + self.uploader.last_name
 
     def get_data_object(self):
         # Population data
@@ -363,8 +339,56 @@ class RemovalFlag(models.Model):
         return reverse('projects_list')
 
 
+def document_upload_path(instance, filename):
+    filename_parts = filename.split('.')
+    extension = filename_parts[1]
+    cleaned_name = re.sub('\s+', '_', instance.name)
+    return '/'.join(['document_uploads', '{0}.{1}'.format(cleaned_name, extension)])
+
+
+class Document(models.Model):
+    """
+    Scanned in documents should be uploadable and can be associated with a project and optionally also a metadata
+    Note that DEA are collecting EIA reports separately, but until we get the two linked up this can be used to store
+    EIA reports as well.
+    """
+    name = models.CharField(max_length=20, help_text='A short, descriptive name for the document')
+    project = models.ForeignKey(Project)
+    metadata = models.ForeignKey(MetaData, null=True, blank=True)
+    uploaded = models.DateTimeField(auto_now_add=True)
+    uploader = models.ForeignKey(User)
+    document = models.FileField(upload_to=document_upload_path)
+
+    EIA = 'E'
+    OTHER = 'O'
+    RAW = 'R'
+    DOCUMENT_TYPE_CHOICES = (
+        (EIA, 'EIA report'),
+        (OTHER, 'Other'),
+        (RAW, 'Raw data')
+    )
+    document_type = models.CharField(max_length=1, choices=DOCUMENT_TYPE_CHOICES, default=EIA)
+
+    def get_table_display(self):
+        # Used to display in table format on all the data_list type pages, must be wrapped in table tags
+        # Headings: Document, File type, Uploader, Uploaded on, Document type
+        return '<tr><td>' \
+               '<a href="' + self.document.url + '">' + self.name + '</a></td><td>' + \
+               self.document.name.split('.')[1].upper() + '</td><td>' + \
+               self.uploader.first_name + ' ' + self.uploader.last_name + '</td><td>' + \
+               formats.date_format(self.uploaded, "DATETIME_FORMAT") + '</td><td>' + \
+               self.get_document_type_display() + '</td></tr>'
+
+    def __str__(self):
+        return '<a href="' + self.document.url + '">' + self.name + '</a> (.' + \
+               self.document.name.split('.')[1].upper() + ' Uploaded: ' + self.uploader.first_name + ' ' + \
+               self.uploader.last_name + ' on ' + \
+               formats.date_format(self.uploaded, "DATETIME_FORMAT") + ' Type: ' + self.get_document_type + ')'
+
+
 # This help text is used in the models below
-taxa_help_text = 'Identify to genus or species level, or select Unknown'
+taxon_help_text = 'Identify to genus or <br>species, or select Unknown'
+observed_help_text = 'Date<br>observed'
 
 
 class PopulationData(models.Model):
@@ -372,15 +396,32 @@ class PopulationData(models.Model):
     Census, focal point & transect data form a population count/estimate
     """
     metadata = models.ForeignKey(MetaData)
-    taxa = models.ForeignKey(Taxon, help_text=taxa_help_text)
-    observed = models.DateTimeField(help_text='Date observed')
-    count = models.IntegerField(help_text='Number counted, or activity level/number of passes per hour (for bats)')
 
-    flight_height_bounds = IntegerRangeField(help_text='Flight height range in metres (equipment height for bats)')
+    taxon_help = taxon_help_text
+    taxon = models.ForeignKey(Taxon, help_text=taxon_help)
 
-    def get_project_location(self):
-        return self.metadata.project.location
-    location = models.PolygonField(default=get_project_location)
+    observed_help = observed_help_text
+    observed = models.DateTimeField(help_text=observed_help)
+
+    abundance_help = 'Count'
+    abundance = models.IntegerField(help_text=abundance_help)
+
+    RELATIVE = 'R'
+    ABSOLUTE = 'A'
+    ABUNDANCE_TYPE_CHOICES = (
+        (RELATIVE, 'Relative'),
+        (ABSOLUTE, 'Absolute')
+    )
+    abundance_type_help = 'Abundance<br>type'
+    abundance_type = models.CharField(max_length=1, choices=ABUNDANCE_TYPE_CHOICES, default='R', help_text=abundance_type_help)
+
+    flight_height_help = 'Flight/equipment<br>height range (m)'
+    flight_height = IntegerRangeField(help_text=flight_height_help)
+
+    def get_flight_height_display(self):
+        return str(self.flight_height.lower) + ' - ' + str(self.flight_height.upper) + 'm'
+
+    location = models.PolygonField()
     objects = models.GeoManager()
 
 
@@ -392,7 +433,20 @@ class PopulationData(models.Model):
         return reverse('project_detail', kwargs={'pk': self.pk})
 
     def __str__(self):
-        return self.collision_risk
+        return str(self.abundance) + ' ' + self.taxon.name + ' seen on ' + formats.date_format(self.observed, "DATETIME_FORMAT")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super(PopulationData, self).save(*args, **kwargs)
+
+    def _get_help_text(self, field_name):
+        """Given a field name, return its help text."""
+        # Let's iterate over all the fields on this model.
+        for field in self._meta.fields:
+            # The name of your field is stored as a name attribute on the field object
+            if field.name == field:
+                # and there's the help_text!
+                return field.help_text
 
 
 class FocalSiteData(models.Model):
@@ -400,22 +454,30 @@ class FocalSiteData(models.Model):
     Records activity for a particular focal site
     """
     metadata = models.ForeignKey(MetaData)
-    taxa = models.ForeignKey(Taxon, help_text=taxa_help_text)
-    observed = models.DateTimeField(help_text='Date observed')
-    count = models.IntegerField(help_text='Number counted')
 
-    focal_site = models.ForeignKey(FocalSite, help_text='The focal site this dataset was recorded at')
+    taxon_help = taxon_help_text
+    taxon = models.ForeignKey(Taxon, help_text=taxon_help)
 
-    life_stage_choices = (
+    observed_help = observed_help_text
+    observed = models.DateTimeField(help_text=observed_help)
+
+    abundance_help = 'Absolute<br>abundance'
+    abundance = models.IntegerField(help_text=abundance_help)
+
+    focal_site_help = 'The focal site this dataset was recorded at'
+    focal_site = models.ForeignKey(FocalSite, help_text=focal_site_help)
+
+    life_stage_help = 'Life<br>stage'
+    LIFE_STAGE_CHOICES = (
         ('C', 'Chick/pup'),
         ('J', 'Juvenile'),
         ('A', 'Adult')
     )
-    life_stage = models.CharField(max_length=1, choices=life_stage_choices, default='A',
-                                  help_text='Please upload a single record for each individual and specify their life stage')
+    life_stage = models.CharField(max_length=1, choices=LIFE_STAGE_CHOICES, default='A', help_text=life_stage_help)
 
     # Only applicable to birds
-    activity_choices = (
+    activity_choices_help = 'Activity (only <br>applicable to birds)'
+    ACTIVITY_CHOICES = (
         ('CDP', 'courtship display'),
         ('CAN', 'adult bird carrying nesting material'),
         ('ANB', 'active nest building'),
@@ -426,8 +488,8 @@ class FocalSiteData(models.Model):
         ('PFS', 'parents with fecal sac'),
         ('PAY', 'parents and young not in nest')
     )
-    activity = models.CharField(max_length=3, choices=activity_choices, null=True, blank=True,
-                                help_text='Only applicable for birds')
+    activity = models.CharField(max_length=3, choices=ACTIVITY_CHOICES, null=True, blank=True,
+                                help_text=activity_choices_help)
 
 
 class FatalityData(models.Model):
@@ -435,8 +497,12 @@ class FatalityData(models.Model):
     Records fatalities
     """
     metadata = models.ForeignKey(MetaData)
-    taxa = models.ForeignKey(Taxon, help_text=taxa_help_text)
-    found = models.DateTimeField(help_text='Date found')
+
+    taxon_help = taxon_help_text
+    taxon = models.ForeignKey(Taxon, help_text=taxon_help)
+
+    found_help = 'Date<br>found'
+    found = models.DateTimeField(help_text=found_help)
 
     coordinates = models.PointField(help_text='The latitude and longitude values where the corpse was found')
     objects = models.GeoManager()
@@ -450,7 +516,8 @@ class FatalityData(models.Model):
         ('P', 'Predation'),
         ('U', 'Undetermined')
     )
-    cause_of_death = models.CharField(max_length=1, choices=cause_of_death_choices, help_text='Specify cause of death')
+    cause_of_death_help = 'Specify cause of death'
+    cause_of_death = models.CharField(max_length=1, choices=cause_of_death_choices, help_text=cause_of_death_help)
 
     def clean(self):
         # Coordinate cannot be outside the bounds of the project
