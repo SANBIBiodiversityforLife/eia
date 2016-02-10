@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
-from core import views, spreadsheet_creation
+from core import views
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.conf.urls.static import static
@@ -30,7 +30,7 @@ urlpatterns = [
 
     # Admin section
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^admin/reset_taxonomy/$', login_required(spreadsheet_creation.reset_taxa_tree), name='admin_reset_taxa_tree'),
+    url(r'^admin/reset_taxonomy/$', login_required(views.index), name='admin_reset_taxa_tree'),
 
     # Front page
     url(r'^$', views.index, name='index'),

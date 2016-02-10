@@ -2,7 +2,6 @@ from django.contrib.gis.db import models
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User, Group
-from core.multiple_select_field import MultipleSelectField
 from django.utils import formats
 from mptt.models import MPTTModel, TreeForeignKey
 import re
