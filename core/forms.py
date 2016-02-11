@@ -55,6 +55,18 @@ class ProfileUpdateForm(forms.ModelForm):
         return profile
 
 
+class PopulationDataCreateForm(forms.Form):
+    location = forms.PolygonField(widget=LeafletWidget(), label='')
+
+    def __init__(self, *args, **kwargs):
+        if 'project_polygon' in kwargs:
+            project_polygon = kwargs.pop('project_polygon')
+            super(PopulationDataCreateForm, self).__init__(*args, **kwargs)
+            self.fields['location'].initial = project_polygon
+        else:
+            super(PopulationDataCreateForm, self).__init__(*args, **kwargs)
+
+
 class ProjectCreateForm(forms.ModelForm):
     class Meta:
         model = models.Project

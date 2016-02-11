@@ -187,7 +187,7 @@ def projects_map(request):
 
 class FocalSiteCreate(CreateView):
     model = models.FocalSite
-    template_name = 'focal_site_create_form'
+    template_name = 'core/focal_site_create_form.html'
     form_class = forms.FocalSiteCreateForm
 
     # No idea why this needs to go in, but it seems to http://stackoverflow.com/questions/18605008/curious-about-get-form-kwargs-in-formview
