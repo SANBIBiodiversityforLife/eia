@@ -30,7 +30,7 @@ urlpatterns = [
 
     # Admin section
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^admin/reset_taxonomy/$', login_required(views.index), name='admin_reset_taxa_tree'),
+    url(r'^admin/reset_taxonomy/$', login_required(views.reset_taxa_tree), name='admin_reset_taxa_tree'),
 
     # Front page
     url(r'^$', views.index, name='index'),
