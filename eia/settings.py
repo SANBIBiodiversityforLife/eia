@@ -43,7 +43,7 @@ INSTALLED_APPS = (
     'core',
     'leaflet',
     'bootstrap3',
-    'django_filter',
+    'django_filters',
     'mptt',
 
     # django allauth
@@ -213,4 +213,5 @@ if 'OPENSHIFT_REPO_DIR' in os.environ:
     ON_OPENSHIFT = True
 
     file = os.path.join(os.path.dirname(os.path.dirname((os.path.abspath(sys.argv[0])))), 'settings_production.py')
+    file = '/var/lib/openshift/56bd9c5189f5cfeaba00009d/app-root/runtime/repo/wsgi/settings_production.py'
     exec(compile(open(file).read(), file, 'exec'))
