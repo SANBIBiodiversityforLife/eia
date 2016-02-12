@@ -61,3 +61,6 @@ tmp/*
 *~
 .codekit-config.json
 >>>>>>> 4dfeef6943d58bde2d8ea1213250f6e1aa49ef0f
+
+# Production settings
+eia/settings_production.py

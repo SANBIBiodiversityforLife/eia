@@ -203,3 +203,8 @@ GBIF_API_CHILDREN_URL = 'http://api.gbif.org/v1/species/{id}/children?limit=' + 
 GBIF_API_OCCURRENCE_URL = 'http://api.gbif.org/v1/occurrence/search?taxonKey={id}&country=ZA&limit=0&language=en&basisofrecord=HUMAN_OBSERVATION' # We just want count, so limit 0
 GBIF_API_SPECIES_URL = 'http://api.gbif.org/v1/species/{id}?&language=en'
 BASE_TAXA = ['Chiroptera', 'Aves'] # 734 and 212 GBIF IDs
+
+# Add the production settings, whatever this is should check to see if it is on production before changing settings
+import sys
+file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'eia', 'settings_production.py')
+exec(compile(open(file).read(), file, 'exec'))
