@@ -43,7 +43,7 @@ INSTALLED_APPS = (
     'core',
     'leaflet',
     'bootstrap3',
-    'django_filters',
+    'django_filter',
     'mptt',
 
     # django allauth
@@ -206,5 +206,11 @@ BASE_TAXA = ['Chiroptera', 'Aves'] # 734 and 212 GBIF IDs
 
 # Add the production settings, whatever this is should check to see if it is on production before changing settings
 import sys
-file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'eia', 'settings_production.py')
-exec(compile(open(file).read(), file, 'exec'))
+
+# Added this 12 Feb to make it openshift compatible
+ON_OPENSHIFT = False
+if 'OPENSHIFT_REPO_DIR' in os.environ:
+    ON_OPENSHIFT = True
+
+    file = os.path.join(os.path.dirname(os.path.dirname((os.path.abspath(sys.argv[0])))), 'settings_production.py')
+    exec(compile(open(file).read(), file, 'exec'))
