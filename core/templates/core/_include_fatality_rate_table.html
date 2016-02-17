@@ -1,0 +1,31 @@
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Taxa</th>
+      <th>Time period covered</th>
+      <th>Rate</th>
+      <th>Flag for removal</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for data in data_set %}
+    <tr>
+      <td>
+        <ul>
+          {% for t in data.taxon.all %}
+          <li>{{ t }}</li>
+          {% endfor %}
+        </ul>
+      </td>
+      <td>{{ data.start_date }} - {{ data.end_date }}</td>
+      <td>{{ data.rate }}</td>
+      <td>
+        <!-- Flag for removal -->
+        <a href="#" type="button" class="btn btn-sm btn-danger"  data-toggle="modal" data-target="#flagModal" data-metadata-id="{{ data.metadata.id }}">
+          <span class="glyphicon glyphicon-flag" aria-hidden="true"></span> Flag
+        </a>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>

@@ -1,0 +1,100 @@
+{% extends "core/_base_project_detail.html" %}
+{% load static %}
+{% load bootstrap3 %}
+
+<!-- NOTE! This template extends _base_project_detail not _base_data_list! -->
+
+{% block sub-breadcrumb %}
+  <li><a href="{% url 'project_detail' project.id %}">{{ project.name }}</a></li>
+  <li class="active">Fatality rates</li>
+{% endblock %}
+
+{% block css %}{% endblock css %}
+
+{% block sub-content-heading %}{% endblock %}
+
+{% block sub-content %}
+  <!-- Fatality table -->
+  <h3>Fatality estimates
+  {% if perms.core.contributor %}
+    <small><a href="{% url 'fatality_rate_create' project.id %}" type="button" class="btn btn-primary btn-sm">
+    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add fatality rates</a></small>
+  </h3>
+  {% endif %}
+  {% if fatality_rates %}
+    {% include 'core/_include_fatality_rate_table.html' with data_set=fatality_rates %}
+  {% else %}
+  <p>None uploaded yet</p>
+  {% endif %}
+
+  <hr>
+  <!-- Searcher table -->
+  <h3>Searcher efficiency rates
+  {% if perms.core.contributor %}
+    <small><a href="{% url 'searcher_rate_create' project.id %}" type="button" class="btn btn-info btn-sm">
+    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add searcher efficiency rates</a></small>
+  </h3>
+  {% endif %}
+  {% if searcher_rates %}
+    {% include 'core/_include_fatality_rate_table.html' with data_set=searcher_rates %}
+  {% else %}
+  <p>None uploaded yet</p>
+  {% endif %}
+
+  <hr>
+  <!-- Scavenger table -->
+  <h3>Scavenger removal rates
+  {% if perms.core.contributor %}
+    <small><a href="{% url 'scavenger_rate_create' project.id %}" type="button" class="btn btn-warning btn-sm">
+    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add scavenger removal rates</a></small>
+  </h3>
+  {% endif %}
+  {% if scavenger_rates %}
+    {% include 'core/_include_fatality_rate_table.html' with data_set=scavenger_rates %}
+  {% else %}
+  <p>None uploaded yet</p>
+  {% endif %}
+
+  <!-- Flag for removal modal -->
+  <div class="modal fade" id="flagModal" tabindex="-1" role="dialog" aria-labelledby="flagModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="flagModalLabel">Flag dataset for removal</h4>
+        </div>
+        <form id="flagForRemoval" method="post" action="{% url 'flag_for_removal' project.pk 0 %}">{% csrf_token %}
+          <div class="modal-body">
+            <p>Why should this dataset be removed?</p>
+            {% bootstrap_form flag_for_removal_form %}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <input type="submit" class="btn btn-danger" id="flagForRemovalButton" value="Flag for removal">
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block js %}
+<script src='{% static "jquery.form.min.js" %}'></script>
+<script src='{% static "core/js/removal_flag_form.js" %}'></script>
+<script type="text/javascript">
+  $(document).ready(function() {
+    // Change the flag metadata for removal form's destination based on which metadata was clicked
+    $('#flagModal').on('show.bs.modal', function (event) {
+      var button = $(event.relatedTarget) // Button that triggered the modal
+      var mid = button.data('metadata-id') // Extract info from data-* attributes
+
+      // Get the modal
+      var modal = $(this)
+
+      // Replace the 0 in the action (a placeholder) with the correct metadata id (mid)
+      attr = modal.find('#flagForRemoval').attr('action');
+      modal.find('#flagForRemoval').attr('action', attr.replace('/0', '/' + mid));
+    })
+  });
+</script>
+{% endblock %}

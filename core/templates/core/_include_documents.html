@@ -1,0 +1,62 @@
+{% load static %}
+{% load bootstrap3 %}
+<!-- Documentation -->
+<hr style="margin: 50px 0;">
+<h4 id="documentation">
+  Documentation
+  {% if perms.core.contributor %}
+  <a id="addDocument" href="#" type="button" class="btn btn-sm btn-success"  data-toggle="modal" data-target="#documentModal">
+    <span class="glyphicon glyphicon-file" aria-hidden="true"></span> Add documentation
+  </a>
+  {% endif %}
+</h4>
+<table id="documentList" class="table table-striped">
+  <thead>
+    <tr>
+      <th>Document</th>
+      <th>File type</th>
+      <th>Uploader</th>
+      <th>Uploaded on</th>
+      <th>Document type</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% if documents %}
+    {% for document in documents %}
+    {{ document.get_table_display|safe }}
+    {% endfor %}
+  {% else %}
+    <tr id="noDocumentationMessage"><td colspan="5">No documentation uploaded yet.</td></tr>
+  {% endif %}
+  </tbody>
+</table>
+
+<!-- Add document modal -->
+<div class="modal fade" id="documentModal" tabindex="-1" role="dialog" aria-labelledby="documentModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="documentModalLabel">Add documentation (e.g. raw data in spreadsheets, etc)</h4>
+      </div>
+      <form id="addDocumentForm" enctype="multipart/form-data" class="form-horizontal" method="post" action="{% url 'add_document' project.pk metadata_pk %}">{% csrf_token %}
+        <div class="modal-body">
+          <div class="modal-body-form">
+            {% bootstrap_form_errors create_document_form layout='horizontal' horizontal_label_class='col-md-3' horizontal_field_class='col-md-8' %}
+            {% bootstrap_form create_document_form layout='horizontal' horizontal_label_class='col-md-3' horizontal_field_class='col-md-8' %}
+          </div>
+          <div class="message-success">
+            Document uploaded.
+          </div>
+          <div id="message-failure">
+          </div>
+        </div>
+        <div class="modal-footer">
+          {% buttons submit='Add document' layout='horizontal' %}
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          {% endbuttons %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,38 @@
+{% extends "core/_base.html" %}
+{% load bootstrap3 %}
+{% load static %}
+
+{% block css %}
+<!-- Chosen -->
+<link href='{% static "chosen/chosen.min.css" %}' rel="stylesheet">
+{% endblock css %}
+
+{% block breadcrumb %}
+<ol class="breadcrumb">
+  <li><a href="#">Home</a></li>
+  <li><a href="{% url 'projects_list' %}">Projects</a></li>
+  <li><a href="{% url 'project_detail' pk=project.id %}">{{ project.name }}</a></li>
+  <li><a href="{% url 'fatality_rates' pk=project.id %}">Fatality estimates (calculated)</a></li>
+  <li class="active">Upload fatality rate data</li>
+</ol>
+{% endblock breadcrumb %}
+
+{% block content %}
+<form role="form" class="form-horizontal fatality-rates" action="" method="post">{% csrf_token %}
+  {% bootstrap_form_errors form %}
+  {% bootstrap_form form layout='horizontal' %}
+  {% buttons submit='Save' layout='horizontal' %}{% block form-buttons %}{% endblock %}{% endbuttons %}
+</form>
+{% endblock content %}
+
+{% block js %}
+  <script src='{% static "chosen/chosen.jquery.min.js" %}'></script>
+  <script type="text/javascript">
+    $(document).ready(function() {
+      $("select#id_taxon").chosen();
+
+      $('#id_start_date_day').parent().hide()
+      $('#id_end_date_day').parent().hide()
+    });
+  </script>
+{% endblock %}
