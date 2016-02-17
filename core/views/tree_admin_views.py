@@ -2,6 +2,8 @@
 from core import models
 from django.conf import settings
 import requests
+from django.shortcuts import render_to_response
+from django.template import RequestContext
 from django.core.management import call_command
 import time
 
@@ -35,7 +37,7 @@ def recursive_tree_builder(parent_id):
                 r = requests.get(settings.GBIF_API_CHILDREN_URL.format(id=parent_id, offset=offset))
             except ConnectionError:
                 # Add 5 seconds onto the time delay
-                time_delay += 5
+                time_delay += 15
                 # Print out so we can monitor it
                 print('Timed out, trying again in ' + time_delay + ' seconds')
 
@@ -70,7 +72,7 @@ def recursive_tree_builder(parent_id):
                     r = requests.get(settings.GBIF_API_OCCURRENCE_URL.format(id=taxon_id))
                 except ConnectionError:
                     # Add 5 seconds onto the time delay
-                    time_delay += 5
+                    time_delay += 15
                     # Print out so we can monitor it
                     print('Timed out, trying again in ' + time_delay + ' seconds')
 
@@ -105,3 +107,37 @@ def recursive_tree_builder(parent_id):
 
         # Increase the offset in case we are not at the end of records
         offset += settings.GBIF_API_OFFSET
+
+
+def sync_iucn_redlisting(request):
+    taxa = models.Taxon.objects.all()
+
+    # Loop through allllllll the taxa
+    for taxon in taxa:
+        # Try and get the info from IUCN
+        time_delay = 0
+        r = False
+        while not r:
+            try:
+                time.sleep(time_delay)
+                r = requests.get(settings.IUCN_API_URL.format(name=taxon.name))
+            except ConnectionError:
+                # Add x seconds onto the time delay
+                time_delay += 15
+                # Print out so we can monitor it
+                print('Timed out, trying again in ' + time_delay + ' seconds')
+
+        # Get the jsoned data
+        data = r.json()
+
+        # Set the info if it is available
+        result = data['result']
+        if result:
+            print(str(taxon) + ' - ' + result[0]['category'])
+            taxon.red_list = result[0]['category']
+        taxon.save()
+
+    # Render the context
+    return render_to_response('/admin/',
+                              {'message': str(len(taxa)) + ' taxa updated with IUCN redlist statuses'},
+                              RequestContext(request))

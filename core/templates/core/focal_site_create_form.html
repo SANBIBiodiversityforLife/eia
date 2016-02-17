@@ -24,7 +24,9 @@
 <form role="form" class="form-horizontal" id="focalSiteForm" action="" method="post">{% csrf_token %}
   {% bootstrap_form_errors form %}
   {% bootstrap_form form layout='horizontal' %}
-  {% buttons submit='Create' layout='horizontal' %}{% endbuttons %}
+  {% buttons submit='Create' layout='horizontal' %}
+  <a href="{% url 'focal_site_data' project.id %}" type="button" class="btn btn-default">Cancel</a>
+  {% endbuttons %}
 </form>
 {% endblock content %}
 

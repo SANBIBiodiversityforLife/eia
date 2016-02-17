@@ -1,6 +1,11 @@
 from django.contrib.gis import forms
 from leaflet.forms.widgets import LeafletWidget
 from core import models
+from datetime import datetime
+import calendar
+
+# This needs to get changed for Django 1.9 to from django.forms import SelectDateWidget
+from django.forms.extras import SelectDateWidget
 
 
 class SignupForm(forms.ModelForm):
@@ -51,7 +56,7 @@ class ProfileUpdateForm(forms.ModelForm):
         u = self.instance.user
         u.email = self.cleaned_data['email']
         u.save()
-        profile = super(ProfileUpdateForm, self).save(*args,**kwargs)
+        profile = super(ProfileUpdateForm, self).save(*args, **kwargs)
         return profile
 
 
@@ -95,7 +100,7 @@ class DocumentCreateForm(forms.ModelForm):
 class FocalSiteCreateForm(forms.ModelForm):
     class Meta:
         model = models.FocalSite
-        fields = ('location', 'name', 'sensitive', 'activity', 'habitat') # todo do i need to insert 'taxon' again?
+        fields = ('location', 'name', 'sensitive', 'activity', 'habitat')  # todo do i need to insert 'taxon' again?
         widgets = {'location': LeafletWidget()}
 
     def __init__(self, *args, **kwargs):
@@ -155,3 +160,67 @@ class RemovalFlagCreateForm(forms.ModelForm):
         model = models.RemovalFlag
         fields = ('reason',)
 
+
+class FatalityRateCreateForm(forms.ModelForm):
+    class Meta:
+        model = models.FatalityRate
+        fields = ('taxon', 'start_date', 'end_date', 'rate')
+        # The widgets dictionary accepts either widget instances or classes
+        # http://stackoverflow.com/questions/9878475/beginner-django-modelform-override-widget
+        widgets = {'start_date': SelectDateWidget(years=range(1900, datetime.now().year + 1)),
+                   'end_date': SelectDateWidget(years=range(1900, datetime.now().year + 1))}
+
+    def __init__(self, *args, **kwargs):
+        self.project_pk = kwargs.pop('project_pk')
+        self.uploader = kwargs.pop('uploader')
+        self.rate_type = kwargs.pop('rate_type')
+
+        # Call the super method
+        super(FatalityRateCreateForm, self).__init__(*args, **kwargs)
+
+        # self.project_pk = project_pk
+        # self.uploader = uploader
+
+        # We only want to include the orders really
+        self.fields['taxon'].queryset = models.Taxon.objects.filter(rank=models.Taxon.ORDER)
+
+        # Set initial dates. Note we hide the days, so for start it must always be 1 and for end it must be last day
+        now = datetime.now()
+        self.fields['start_date'].initial = now.replace(day=1)
+        last_day_of_month = calendar.monthrange(now.year, now.month)[1]
+        self.fields['end_date'].initial = now.replace(day=last_day_of_month)
+
+    # Called to validate the form
+    def clean(self):
+        metadata = models.MetaData(project_id=self.project_pk, uploader=self.uploader)
+        metadata.save()
+        self.instance.metadata = metadata
+        self.instance.rate_type = self.rate_type
+
+        # Run the super clean method once the metadata is set
+        cleaned_data = super(FatalityRateCreateForm, self).clean()
+
+        # Note that start date < end date validation is occurring in model's clean
+        # Can't put the below in there because of manytomany field apparently
+        # We should not be able to upload e.g. 2 scavenger removal rates for the same (or overlapping) time period
+        # See https://www.reddit.com/r/django/comments/2ckxdy/dealing_with_start_and_end_date_fields/
+        taxon = self.cleaned_data.get('taxon')
+        start_date = self.cleaned_data.get('start_date')
+        end_date = self.cleaned_data.get('end_date')
+
+        same_timespan = models.FatalityRate.objects.filter(metadata__project__pk=self.instance.metadata.project.pk,
+                                                           rate_type=self.instance.rate_type,
+                                                           taxon=taxon,
+                                                           end_date__gte=start_date,
+                                                           start_date__lte=end_date)
+        if same_timespan:
+            self.add_error('',
+                           forms.ValidationError('There is already a ' + self.instance.get_rate_type_display() +
+                                                 ' for this project, time period and taxa'))
+            # raise forms.ValidationError('There is already a ' + self.instance.get_rate_type_display() +
+            #                            ' for this project, time period and taxa')
+
+
+
+        # Always return the cleaned data
+        return cleaned_data

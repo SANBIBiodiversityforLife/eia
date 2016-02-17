@@ -22,7 +22,9 @@
     <li role="presentation" class="{% if url_name == 'focal_site_data' %}active{% endif %}">
       <a href="{% url 'focal_site_data' project.id %}">Focal sites</a></li>
     <li role="presentation" class="{% if url_name == 'fatality_data' %}active{% endif %}">
-      <a href="{% url 'fatality_data' project.id %}">Fatalities</a></li>
+      <a href="{% url 'fatality_data' project.id %}">Fatality counts (raw)</a></li>
+    <li role="presentation" class="{% if url_name == 'fatality_rates' %}active{% endif %}">
+      <a href="{% url 'fatality_rates' project.id %}">Fatality rates (estimated)</a></li>
     {% endwith %}
   </ul>
 
@@ -30,3 +32,49 @@
 
   {% block sub-content %}{% endblock %}
 {% endblock content %}
+
+{% block js %}
+  <script src='{% static "jquery.form.min.js" %}'></script>
+  <script type="text/javascript">
+    $(document).ready(function() {
+      var options = {
+        dataType: 'json',
+        success: function(data) {
+          // Change the header
+          $('#addDocumentForm .modal-body-form').hide();
+          $('#addDocumentForm .message-success').show();
+
+          // If this the first time they're adding docs, hide the no doc message behind the modal
+          $('#noDocumentationMessage').hide();
+
+          // Append the new doc
+          $('#documentList').append(data['document']);
+
+          // Hide the upload button
+          $('#addDocumentForm .modal-footer .btn-primary').hide();
+        },
+        error: function(jqXHR, textStatus, errorThrown){
+          $('#addDocumentForm .modal-body-form').hide();
+          $('#addDocumentForm .message-failure').show();
+          console.log(jqXHR);
+          console.log(textStatus);
+          console.log(errorThrown);
+        }
+      }
+      $('#addDocumentForm').ajaxForm(options);
+
+      // Reset the document modal
+      $("#documentModal").on("hidden.bs.modal", function(){
+        // Reset the modal
+        $('#addDocumentForm .modal-body-form').show();
+        $('#addDocumentForm .message-success').hide();
+        $('#addDocumentForm .message-failure').hide();
+        $('#addDocumentForm .modal-footer .btn-primary').show();
+
+        // Reset the form fields
+        $('#addDocumentForm')[0].reset();
+      });
+    });
+  </script>
+  {% block data-list-js %}{% endblock %}
+{% endblock %}

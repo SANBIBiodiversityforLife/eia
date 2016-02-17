@@ -21,7 +21,6 @@
 {% if fatality_locations %}
   {% leaflet_map "main" callback="main_map_init" %}
 {% else %}
-  <p>No fatalities yet.</p>
 {% endif %}
 {% endblock %}
 
@@ -38,7 +37,7 @@
     <tbody>
     {% for data in data_set %}
       <tr>
-        <td>{{ data.taxon }}{% if data.taxon.vernacular_name %} ({{ data.taxon.vernacular_name }}){% endif %}</td>
+        <td>{{ data.taxon }}</td>
         <td>{{ data.coordinates.coords }}</td>
         <td>{{ data.get_cause_of_death_display}}</td>
       </tr>

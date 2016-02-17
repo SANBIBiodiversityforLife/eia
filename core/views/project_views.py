@@ -147,11 +147,17 @@ def project_detail(request, pk):
     # Project is a queryset (from filter), as this is what geojson requires, now return the actual object
     project = project[0]
 
+    # Generate the documentation form for this dataset and get all the documents
+    documents = models.Document.objects.filter(project=project, metadata=None)
+    create_document_form = forms.DocumentCreateForm()
+
     # Render the context
     return render_to_response('core/project_detail.html',
                               {'project_location': project_location_geojson,
                                'turbine_locations': turbine_locations_geojson,
-                               'project': project},
+                               'project': project,
+                               'create_document_form': create_document_form,
+                               'documents': documents},
                               RequestContext(request))
 
 

@@ -77,7 +77,8 @@ ROOT_URLCONF = 'eia.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        # 'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -203,6 +204,8 @@ GBIF_API_CHILDREN_URL = 'http://api.gbif.org/v1/species/{id}/children?limit=' + 
 GBIF_API_OCCURRENCE_URL = 'http://api.gbif.org/v1/occurrence/search?taxonKey={id}&country=ZA&limit=0&language=en&basisofrecord=HUMAN_OBSERVATION' # We just want count, so limit 0
 GBIF_API_SPECIES_URL = 'http://api.gbif.org/v1/species/{id}?&language=en'
 BASE_TAXA = ['Chiroptera', 'Aves'] # 734 and 212 GBIF IDs
+# This token ID for IUCN has been generated for SANBI's use only
+IUCN_API_URL = 'http://apiv3.iucnredlist.org/api/v3/species/{name}?token=c912c913108d604744f52d5e55a0833d1abe77ffa2d2462de948d930e8f9bb90'
 
 # Add the production settings, whatever this is should check to see if it is on production before changing settings
 import sys

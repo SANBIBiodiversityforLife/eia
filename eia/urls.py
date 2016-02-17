@@ -31,6 +31,7 @@ urlpatterns = [
     # Admin section
     url(r'^admin/', include(admin.site.urls)),
     url(r'^admin/reset_taxonomy/$', login_required(views.reset_taxa_tree), name='admin_reset_taxa_tree'),
+    url(r'^admin/sync_iucn_redlisting/$', login_required(views.sync_iucn_redlisting), name='admin_sync_iucn_redlisting'),
 
     # Front page
     url(r'^$', views.index, name='index'),
@@ -46,7 +47,7 @@ urlpatterns = [
     url(r'^project/update/(?P<pk>[0-9]+)/$', login_required(views.ProjectUpdate.as_view()), name='project_update'),
     url(r'^project/update-operational/(?P<pk>[0-9]+)/$', login_required(views.ProjectUpdateOperationalInfo.as_view()), name='project_update_operational_info'),
 
-    # Data view URLS
+    # Data view URLS, overridden depending on if a metadata_pk or whatever is specified
     url(r'^project/(?P<pk>[0-9]+)/population_data/$', login_required(views.population_data), name='population_data'),
     url(r'^project/(?P<pk>[0-9]+)/population_data/(?P<metadata_pk>[0-9]+)$', login_required(views.population_data), name='population_data'),
     url(r'^project/(?P<pk>[0-9]+)/focal_site_data/$', login_required(views.focal_site_data), name='focal_site_data'),
@@ -54,12 +55,14 @@ urlpatterns = [
     url(r'^project/(?P<pk>[0-9]+)/focal_site_data/(?P<focal_site_pk>[0-9]+)/(?P<metadata_pk>[0-9]+)$', login_required(views.focal_site_data), name='focal_site_data'),
     url(r'^project/(?P<pk>[0-9]+)/fatality_data/$', login_required(views.fatality_data), name='fatality_data'),
     url(r'^project/(?P<pk>[0-9]+)/fatality_data/(?P<metadata_pk>[0-9]+)$', login_required(views.fatality_data), name='fatality_data'),
+    url(r'^project/(?P<pk>[0-9]+)/fatality_rates/$', login_required(views.fatality_rates), name='fatality_rates'),
+    url(r'^project/(?P<pk>[0-9]+)/fatality_rates/(?P<metadata_pk>[0-9]+)$', login_required(views.fatality_rates), name='fatality_rates'),
 
     # Flag for removal
     url(r'^project/(?P<pk>[0-9]+)/(?P<metadata_pk>[0-9]+)/flag_for_removal$', login_required(views.flag_for_removal), name='flag_for_removal'),
 
     # Add a document
-    url(r'^project/(?P<pk>[0-9]+)/(?P<metadata_pk>[0-9]+)/add_metadata_document$', login_required(views.add_metadata_document), name='add_metadata_document'),
+    url(r'^project/(?P<pk>[0-9]+)/add_document/(?P<metadata_pk>[0-9]+)?$', login_required(views.add_document), name='add_document'),
 
     # Developer
     url(r'^developer/create/$', login_required(views.DeveloperCreate.as_view()), name='developer_create'),
@@ -85,4 +88,15 @@ urlpatterns = [
     url(r'^project/(?P<project_pk>[0-9]+)/fatality_data/create/',
         login_required(views.fatality_data_create),
         name='fatality_data_create'),
+
+    # Fatality rate add URLs
+    url(r'^project/(?P<project_pk>[0-9]+)/fatality_rates/create/fatality_rate',
+        login_required(views.FatalityRateCreate.as_view()),
+        name='fatality_rate_create'),
+    url(r'^project/(?P<project_pk>[0-9]+)/fatality_rates/create/scavenger_rate',
+        login_required(views.ScavengerRateCreate.as_view()),
+        name='scavenger_rate_create'),
+    url(r'^project/(?P<project_pk>[0-9]+)/fatality_rates/create/searcher_rate',
+        login_required(views.SearcherRateCreate.as_view()),
+        name='searcher_rate_create'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

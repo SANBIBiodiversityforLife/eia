@@ -1,5 +1,6 @@
 # Django rendering stuff
 from django.shortcuts import render_to_response, render, redirect
+from django.views.generic import CreateView
 
 # Core & settings
 from core import models, forms
@@ -330,3 +331,52 @@ def fatality_data_create(request, project_pk):
 
     # Show the template
     return render(request, 'core/fatality_data_create.html', context)
+
+
+class FatalityRateCreate(CreateView):
+    model = models.FatalityRate
+    template_name = 'core/fatality_rate_create.html'
+    form_class = forms.FatalityRateCreateForm
+
+    def get_form_kwargs(self):
+        kwargs = super(FatalityRateCreate, self).get_form_kwargs()
+        kwargs['project_pk'] = self.kwargs['project_pk']
+        kwargs['uploader'] = self.request.user
+        kwargs['rate_type'] = models.FatalityRate.FATALITY
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super(FatalityRateCreate, self).get_context_data(**kwargs)
+        #self.project_pk = self.kwargs['project_pk']
+        context['project'] = models.Project.objects.get(pk=self.kwargs['project_pk'])
+        return context
+
+"""
+    def form_valid(self, form):
+        # This method is called when valid form data has been POSTed.
+        # It should return an HttpResponse.
+        import pdb; pdb.set_trace()
+        metadata = models.MetaData(project=self.kwargs['project_pk'], uploader=self.request.user)
+        metadata.save()
+        form.instance.metadata = metadata
+        return super(FatalityRateCreate, self).form_valid(form)"""
+
+
+class ScavengerRateCreate(FatalityRateCreate):
+    """
+    Subclasses the fatality rate create as we just need to override the rate_type
+    """
+    def get_form_kwargs(self):
+        kwargs = super(ScavengerRateCreate, self).get_form_kwargs()
+        kwargs['rate_type'] = models.FatalityRate.SCAVENGER
+        return kwargs
+
+
+class SearcherRateCreate(FatalityRateCreate):
+    """
+    Subclasses the fatality rate create as we just need to override the rate_type
+    """
+    def get_form_kwargs(self):
+        kwargs = super(SearcherRateCreate, self).get_form_kwargs()
+        kwargs['rate_type'] = models.FatalityRate.SEARCHER
+        return kwargs

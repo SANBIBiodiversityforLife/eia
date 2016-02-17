@@ -120,19 +120,19 @@ dd, dt {
 #upload-form-wrapper #step2 {
     background-color: #FFF5AA;
 }
-#upload-form-wrapper .step ul, #upload-form-wrapper .step p {
+#upload-form-wrapper .step-instructions ul, #upload-form-wrapper .step-instructions p {
     width: 700px;
     margin: 10px auto;
 }
-#upload-form-wrapper .step ul li:hover {
+#upload-form-wrapper .step-instructions ul li:hover {
     background-color: #fffce5;
 }
-#upload-form-wrapper .step ul li {
+#upload-form-wrapper .step-instructions ul li {
     text-align: left;
     padding: 15px 0 15px 0;
     border-bottom: 1px dashed rgba(51, 51, 51, 0.25);
 }
-#upload-form-wrapper .step ul li:last-child {
+#upload-form-wrapper .step-instructions ul li:last-child {
     border-bottom: 0;
 }
 #upload-form-wrapper .step {
@@ -182,6 +182,9 @@ dd, dt {
     -webkit-box-align:center;
     -webkit-box-pack:center;
     display:-webkit-box;
+    -moz-box-align:center;
+    -moz-box-pack:center;
+    display:-moz-box;
     margin-bottom: 15px;
 }
 #hot {

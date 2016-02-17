@@ -24,7 +24,8 @@ def flag_for_removal(request, pk, metadata_pk):
         else:
             return JsonResponse(form.errors, status=400)
 
-def add_metadata_document(request, pk, metadata_pk):
+
+def add_document(request, pk, metadata_pk=None):
     """
     Accessible only via ajax, this allows users to upload documents associated with particular metadata
     """
@@ -38,8 +39,9 @@ def add_metadata_document(request, pk, metadata_pk):
             document = form.save(commit=False)
             document.uploader = request.user
             document.project_id = pk
-            document.metadata_id = metadata_pk
+            if metadata_pk:
+                document.metadata_id = metadata_pk
             document.save()
-            return JsonResponse({'document': str(document)})
+            return JsonResponse({'document': document.get_table_display()})
         else:
             return JsonResponse(form.errors, status=400)

@@ -111,6 +111,9 @@ admin.site.register(User, MyUserAdmin)
 # Projects
 admin.site.register(models.Project, admin.ModelAdmin)
 
+# Focal sites
+admin.site.register(models.FocalSite, admin.ModelAdmin)
+
 # Adminsite customisation
 admin.site.site_header = "Administration"
 
@@ -155,6 +158,8 @@ class RemovalFlagAdmin(admin.ModelAdmin):
             return 'fatality_data'
         elif models.FocalSiteData.objects.filter(metadata=metadata).exists():
             return 'focal_site_data'
+        elif models.FatalityRate.objects.filter(metadata=metadata).exists():
+            return 'fatality_rates'
         else:
             return False
 
@@ -173,6 +178,45 @@ class RemovalFlagAdmin(admin.ModelAdmin):
 admin.site.register(models.RemovalFlag, RemovalFlagAdmin)
 
 
-admin.site.register(models.Taxon, MPTTModelAdmin)
+class TaxonAdmin(MPTTModelAdmin):
+    change_list_template = 'admin/core/taxon/change_list.html'
+    search_fields = ('name', 'vernacular_name')
+    actions = admin.ModelAdmin.actions
+    actions.append('set_sensitive')
+    actions.append('remove_sensitive')
+
+    def set_sensitive(self, request, queryset):
+        # Set all in queryset to be sensitive
+        for taxon in queryset:
+            taxon.sensitive = True
+            taxon.save()
+    set_sensitive.short_description = "Set taxa to 'sensitive' (not visible to anybody without trusted status)"
+
+    def remove_sensitive(self, request, queryset):
+        # Set all in queryset to be sensitive
+        for taxon in queryset:
+            taxon.sensitive = False
+            taxon.save()
+    remove_sensitive.short_description = "Remove 'sensitive' status (taxa will be visible to anybody without trusted " \
+                                         "status)"
+
+    def get_actions(self, request):
+        # Disable delete
+        actions = super(TaxonAdmin, self).get_actions(request)
+        del actions['delete_selected']
+        return actions
+
+admin.site.register(models.Taxon, TaxonAdmin)
 
 
+# Documents
+class DocumentAdmin(admin.ModelAdmin):
+    # Below controls the table display in the change_list in the admin site (list of all documents)
+    list_display = admin.ModelAdmin.list_display + ('project', 'metadata', 'uploaded', 'uploader', 'document', 'document_type')
+    l = list(list_display)
+    l.remove('__str__')
+    list_display = tuple(l)
+
+    # Add search ability to it
+    search_fields = ('document', 'project')
+admin.site.register(models.Document, DocumentAdmin)

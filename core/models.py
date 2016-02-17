@@ -61,13 +61,14 @@ class Project(models.Model):
     # developer changes. Usually names will stay the same and so will the developer.
     # See http://stackoverflow.com/questions/2253962/should-i-add-this-new-column-to-customers-table-or-to-a-separate-new-table
     # http://stackoverflow.com/questions/2834361/should-i-store-logging-information-in-main-database-table
-    name = models.CharField(max_length=50, unique=True)
-    developer = models.ForeignKey(Developer)
+    name = models.CharField(max_length=50, unique=True, help_text='The official name of the project')
+    developer = models.ForeignKey(Developer, help_text='The company doing the development work on the project')
 
     # Additional information
-    location = models.PolygonField()
+    location = models.PolygonField(help_text='<a href="#" onClick="startIntro()"  data-toggle="tooltip" data-placement="right" title="Click to learn how to use our maps">Learn how to use the map. You can load a KML or GPX, or draw a shape manually\
+          <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span></a>.')
     objects = models.GeoManager()
-    eia_number = models.CharField(max_length=20)
+    eia_number = models.CharField(max_length=20, help_text='The official number provided by DEA')
 
     WIND = 'W'
     SOLAR = 'S'
@@ -75,18 +76,18 @@ class Project(models.Model):
         (WIND, 'Wind turbine'),
         (SOLAR, 'Solar panels')
     )
-    energy_type = models.CharField(max_length=1, choices=ENERGY_TYPE_CHOICES, default=WIND)
+    energy_type = models.CharField(max_length=1, choices=ENERGY_TYPE_CHOICES, default=WIND, help_text='The type of renewable energy')
 
     # Operation details
-    operational_date = models.DateField(null=True, blank=True)
-    construction_date = models.DateField(null=True, blank=True)
+    operational_date = models.DateField(null=True, blank=True, help_text='The day on which building is complete (e.g. the turbines are revolving)')
+    construction_date = models.DateField(null=True, blank=True, help_text='The day on which construction starts')
 
     # Turbine location needs to be stored as points, solar panels are polygons
     turbine_locations = models.MultiPointField(null=True, blank=True)
     solar_panel_locations = models.PolygonField(null=True, blank=True)
 
     # Store info about the turbines/solar panels
-    equipment_make = models.ForeignKey(EquipmentMake, null=True, blank=True)
+    equipment_make = models.ForeignKey(EquipmentMake, null=True, blank=True, help_text='The make and brand of the equipment')
     equipment_capacity = models.IntegerField(null=True, blank=True)
     equipment_height = models.IntegerField(null=True, blank=True)
 
@@ -199,7 +200,7 @@ class Taxon(MPTTModel):
     # I am not sure about where sensitive species will come from
     sensitive = models.BooleanField(default=False)
 
-    # This is used when serializing data so that we don't get a nasty meaningless number as output
+    # This is used when serializing data (focal sites geojson, etc) so that we don't get a meaningless number as output
     def natural_key(self):
         return self.__str__()
 
@@ -207,8 +208,9 @@ class Taxon(MPTTModel):
     class MPTTMeta:
         order_insertion_by = ['name']
 
+    # This might need to chagne back to just self.name
     def __str__(self):
-        return self.name
+        return self.name + ' (' + self.vernacular_name + ')'
 
 
 class FocalSite(models.Model):
@@ -280,7 +282,7 @@ class FocalSite(models.Model):
 
 class MetaData(models.Model):
     """
-    Metadata for the 3 different types of datasets - population data, focal site data, fatality data
+    Allows blame log
     """
     project = models.ForeignKey(Project)
     flagged_for_query = models.BooleanField(default=False)
@@ -319,10 +321,10 @@ class MetaData(models.Model):
             text += ' (control data)'"""
         return 'Uploaded : ' + formats.date_format(self.uploaded_on, "DATETIME_FORMAT") + ' by ' + \
                self.uploader.first_name + ' ' + self.uploader.last_name
-
+"""
     def get_data_object(self):
         # Population data
-        models.PopulationData.objects.get(metadata=self)
+        models.PopulationData.objects.get(metadata=self)"""
 
 
 class RemovalFlag(models.Model):
@@ -379,10 +381,10 @@ class Document(models.Model):
                self.get_document_type_display() + '</td></tr>'
 
     def __str__(self):
-        return '<a href="' + self.document.url + '">' + self.name + '</a> (.' + \
+        return 'Project: ' + self.project.name + ' | ' + self.name + ' (.' + \
                self.document.name.split('.')[1].upper() + ' Uploaded: ' + self.uploader.first_name + ' ' + \
                self.uploader.last_name + ' on ' + \
-               formats.date_format(self.uploaded, "DATETIME_FORMAT") + ' Type: ' + self.get_document_type + ')'
+               formats.date_format(self.uploaded, "DATETIME_FORMAT") + ' Type: ' + self.get_document_type_display() + ')'
 
 
 # This help text is used in the models below
@@ -522,3 +524,60 @@ class FatalityData(models.Model):
         # Coordinate cannot be outside the bounds of the project
         if not self.metadata.project.location.contains(self.coordinates):
             raise ValidationError({'coordinates': 'Fatality coordinates are outside the project polygon bounds.'})
+
+
+class FatalityRate(models.Model):
+    metadata = models.ForeignKey(MetaData)
+
+    # Bat people will just be choosing Chiroptera, bird people might want to split it up into large, medium & small fams
+    taxon_help = 'Choose small, medium or large bird families, or Chiroptera for bats'
+    taxon = models.ManyToManyField(Taxon, help_text=taxon_help)
+
+    # This was originally done by season, but it's too confusing that way as summer spans 2 years in SA
+    # I imagine that CA will only be for the whole year, but give them the option to change it
+    start_date = models.DateField(help_text='Select the start of the period this estimate/rate is for (should be '
+                                            'seasonal or yearly, in special cases can be month-by-month)')
+    end_date = models.DateField(help_text='Select the end of the period this estimate/rate is for (should be '
+                                          'seasonal or yearly, in special cases can be month-by-month)')
+
+    # The actual rate/count we are recording (see below for types)
+    rate = models.DecimalField(max_digits=8, decimal_places=5, help_text='Enter your calculated rate, can be to 5 '
+                                                                         'decimal places.')
+
+    # Two different types of rate can be stored which are used to calculate final numbers
+    SCAVENGER = 'SC'
+    SEARCHER = 'SE'
+    FATALITY = 'FA'
+    rate_type_choices = (
+        (SCAVENGER, 'Scavenger removal rate'),
+        (SEARCHER, 'Searcher efficiency rate'),
+        (FATALITY, 'Calculated fatality rate (per year)'),
+    )
+    rate_type = models.CharField(max_length=2, choices=rate_type_choices)
+
+    # When they test searcher efficiency or calculate scavenger removal they should specify radius & area shape
+    """radius = models.IntegerField()
+    shape_choices = (
+        ('S', 'Square'),
+        ('C', 'Circle'),
+        ('N', 'Not applicable'),
+    )
+    shape = models.CharField(max_length=1, choices=shape_choices)"""
+
+    def clean(self):
+        # Some important validation needs to occur here: you should not be able to
+        # upload the same taxon + start date + end date + rate_type
+        # but have to put this in modelform as it is not possible to do it here
+        # See http://stackoverflow.com/questions/7986510/django-manytomany-model-validation
+
+        # Start date should be before end date
+        if self.start_date >= self.end_date:
+            raise ValidationError({
+                'end_date': 'End date must be after the start date'
+            })
+
+        # All other validation
+        super(FatalityRate, self).clean()
+
+    def get_absolute_url(self):
+        return reverse('fatality_rates', kwargs={'pk': self.metadata.project.pk})

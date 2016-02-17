@@ -67,9 +67,11 @@
     </table>
   </div>
 </div>
+
+{% include 'core/_include_documents.html' %}
 {% endblock sub-content %}
 
-{% block js %}
+{% block data-list-js %}
 {% if turbine_locations %}<script src='{% static "core/js/leaflet_turbine_markers.js" %}'></script>{% endif %}
 <script type="text/javascript">
 function main_map_init(map, options) { // See http://blog.mathieu-leplatre.info/geodjango-maps-with-leaflet.html
@@ -96,4 +98,4 @@ function main_map_init(map, options) { // See http://blog.mathieu-leplatre.info/
     // Data points?
 }
 </script>
-{% endblock js %}
+{% endblock %}

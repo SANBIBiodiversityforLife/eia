@@ -180,5 +180,30 @@ def fatality_data(request, pk, metadata_pk=None):
                               RequestContext(request))
 
 
+def fatality_rates(request, pk):
+    # Get the project and create the response object
+    project = models.Project.objects.filter(pk=pk)
+    response = {'project': project[0]}
+
+    # Get a queryset of the data objects for this project and then the corresponding metadata
+    # Note we can do select_related('metadata') just for metadata, but we also need the taxa info
+    fatality_rates = models.FatalityRate.objects.select_related('metadata').filter(metadata__project__pk=pk).order_by('start_date')
+
+    # If we have any metadata for this project, retrieve the corresponding data objects
+    if fatality_rates:
+        # Split up the datasets into scavenger, searcher & actual estimates
+        response['scavenger_rates'] = fatality_rates.filter(rate_type=models.FatalityRate.SCAVENGER)
+        response['searcher_rates'] = fatality_rates.filter(rate_type=models.FatalityRate.SEARCHER)
+        response['fatality_rates'] = fatality_rates.filter(rate_type=models.FatalityRate.FATALITY)
+
+        # Generate the flagging form for these datasets
+        response['flag_for_removal_form'] = forms.RemovalFlagCreateForm()
+
+    # Render the context
+    return render_to_response('core/fatality_rates_list.html',
+                              response,
+                              RequestContext(request))
+
+
 
 

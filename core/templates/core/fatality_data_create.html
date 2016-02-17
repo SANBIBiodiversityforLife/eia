@@ -33,7 +33,7 @@
       <div id="hot-wrapper"><div id="hot"></div></div>
       <p><strong>Finished? Once you have pressed "Upload" you will be given the opportunity to add your raw data sheets or any documentation you might feel is useful.</strong></p>
       <button id="submitData" type="button" class="btn btn-primary">Upload</button>
-      <button type="button" class="btn btn-default">Cancel</button>
+      <a href="{% url 'fatality_data' project.id %}" type="button" class="btn btn-default">Cancel</a>
     </div>
   </form>
 {% endblock %}
