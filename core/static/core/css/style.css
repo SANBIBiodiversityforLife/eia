@@ -5,65 +5,6 @@ header { margin: 10px 0; }
     border-bottom: 1px solid #eee;
 }
 
-/*
-.alert ol li {
-    padding-top: 0.85em;
-}
-
-
-.steps>div>div:hover, .steps a#step-wrapper:hover {
-    background-color: #fff084;
-    transform: rotate(0deg);
-    box-shadow: 4px 4px 4px 0px rgba(0,0,0,0.4);
-}
-.fadein, #formRemainder {
-    display: none;
-}
-a#step-wrapper {
-    display: block;
-    color: inherit;
-}
-.steps>div>div, .steps #step-wrapper {
-    border-radius: 100px;
-    padding: 10px;
-    text-align: center;
-    border: 1px solid #cec273;
-    height: 220px;
-    box-shadow: 1px 1px 1px 2px rgba(0,0,0,0.2);
-}
-.steps hr {
-    border-color: #333
-}
-.steps h4 { font-weight: bold; }
-.steps #step-wrapper {
-    background: #fff8c9 url('/static/core/img/forms/step1.png') center 130px no-repeat;
-    background-size: contain;
-    transform: rotate(-5deg);
-}
-.steps .step-2 div {
-    background: #fff2a3 url('/static/core/img/forms/enable-editing.png') center 120px no-repeat;
-    background-size: contain;
-    transform: rotate(-5deg);
-}
-.steps .step-3 div {
-    background: #fff189 url('/static/core/img/forms/step3.png') center 120px no-repeat;
-    background-size: contain;
-    transform: rotate(-5deg);
-}
-form#upload-form h3 {
-    text-align: center;
-    margin-bottom: 20px;
-}
-form#upload-form {
-    max-width: 500px;
-    margin: 0 auto;
-}
-form#upload-form .form-container {
-    border: 1px solid #EFEFEF;
-    border-radius: 10px;
-    padding: 20px;
-}*/
-
 footer {
     text-align: center;
     border-top: 1px solid #ddd;
