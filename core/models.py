@@ -88,8 +88,8 @@ class Project(models.Model):
 
     # Store info about the turbines/solar panels
     equipment_make = models.ForeignKey(EquipmentMake, null=True, blank=True, help_text='The make and brand of the equipment')
-    equipment_capacity = models.IntegerField(null=True, blank=True)
-    equipment_height = models.IntegerField(null=True, blank=True)
+    equipment_capacity = models.DecimalField(null=True, blank=True, max_digits=6, decimal_places=2)
+    equipment_height = models.DecimalField(null=True, blank=True, max_digits=6, decimal_places=2)
 
     def get_absolute_url(self):
         return reverse('project_update_operational_info', kwargs={'pk': self.pk})
@@ -210,7 +210,10 @@ class Taxon(MPTTModel):
 
     # This might need to chagne back to just self.name
     def __str__(self):
-        return self.name + ' (' + self.vernacular_name + ')'
+        if self.vernacular_name:
+            return self.name + ' (' + self.vernacular_name + ')'
+        else:
+            return self.name
 
 
 class FocalSite(models.Model):

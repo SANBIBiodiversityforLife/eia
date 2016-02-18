@@ -14,12 +14,6 @@ $(document).ready(function() {
 
         // Add the filelayer to allow the uploading of files
         control = L.Control.fileLayerLoad({
-            // See http://leafletjs.com/reference.html#geojson-options
-            layerOptions: {
-                style: { color:'red' },
-                //onEachFeature: function(feature){ drawnItems.addLayer(feature); },
-            },
-
             // Add to map after loading (default: true) ?
             addToMap: false,
         });
@@ -30,22 +24,36 @@ $(document).ready(function() {
             // Get the geojson layer which gets added from the file layers
             gLayer = e.layer.getLayers()[0];
 
-            // Only allow polygons to proceed
-            if(gLayer.feature.geometry.type != 'Polygon') {
-                alert('Invalid geometry (' + gLayer.feature.geometry.type + '). You must upload only a single polygon.');
+            // Groups of points always seem to be geometrycollections
+            if(gLayer.feature.geometry.type != 'GeometryCollection') {
+                alert('Invalid geometry (' + gLayer.feature.geometry.type + '). You must upload only points for turbines.');
                 location.reload(true);
+                return;
             }
 
-            // If it's a KML it will have altitude, so iterate through and strip them out
-            newLatLngs = []
-            oldLatLngs = gLayer.getLatLngs();
-            $(oldLatLngs).each(function(index, obj) {
-                newLatLng = {lat: obj.lat, lng: obj.lng} // Can also: new L.LatLng(obj.lat, obj.lng);
-                newLatLngs.push(newLatLng);
-            })
+            // Presumably you can have geometrycollections of lines etc, so don't allow this
+            $(gLayer.feature.geometry.geometries).each(function(index, obj){
+                if(obj.type != 'Point') {
+                    alert('Invalid geometry (' + obj.type + '). You must upload only points for turbines.');
+                    location.reload(true);
+                    return;
+                }
+            });
 
-            // Set the new latlngs for the polygon
-            gLayer.setLatLngs(newLatLngs);
+            // These are the LatLong points
+            oldLatLngs = gLayer.getLayers(); // Note for polygons this is getLatLngs()
+
+
+            // If it's a KML it will have altitude, so iterate through and strip them out
+            $(oldLatLngs).each(function(index, obj) {
+                oldLatLng = obj.getLatLng();
+                newLatLng = {lat: oldLatLng.lat, lng: oldLatLng.lng}; // Can also: new L.LatLng(obj.lat, obj.lng);
+                obj.setLatLng(newLatLng);
+                //lg = L.layerGroup(newLatLng);
+                //gLayer.addLayer(lg);
+                //lg.editable.enable();
+                //newLatLngs.push(newLatLng);
+            })
 
             // If someone has drawn something previously we need to wipe it
             drawnItems.eachLayer(function(l) {
@@ -53,11 +61,11 @@ $(document).ready(function() {
             })
             drawnItems.clearLayers();
 
-            // Add the polygon to the map, not sure why this is required but django-leaflet does this
-            map.addLayer(gLayer)
-
-            // Add the polygon to the drawnItems featureGroup
-            drawnItems.addLayer(gLayer);
+            // Add the points to the map and to drawnitems
+            $(gLayer.getLayers()).each(function(index, obj){
+                map.addLayer(obj);
+                drawnItems.addLayer(obj);
+            });
 
             // Django-leaflet does this so just copy it
             store.save(drawnItems);

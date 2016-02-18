@@ -131,6 +131,9 @@ class ProjectUpdateOperationalInfoForm(forms.ModelForm):
             'equipment_height': 'The height of the turbines/solar panels',
         }
 
+    #def clean(self):
+    #    import pdb; pdb.set_trace()
+
 
 class ProjectUpdateForm(forms.ModelForm):
     class Meta:
