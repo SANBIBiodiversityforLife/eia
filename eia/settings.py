@@ -221,13 +221,16 @@ if 'OPENSHIFT_REPO_DIR' in os.environ:
     exec(compile(open(file).read(), file, 'exec'))
     
 # Heroku compatibility
-if 'ON_HEROKU' in os.environ:
-    import dj_database_url
-    db_from_env =  dj_database_url.config()
-    DATABASES['default'].update(db_from_env)
+import dj_database_url
+if os.getcwd() == "/app":
+    #db_from_env =  dj_database_url.config()
+    #DATABASES['default'].update(db_from_env)
+    
+    
+    DATABASES = {'default': dj_database_url.config(default='postgres://localhost')}
     # Static files (CSS, JavaScript, Images)
     # https://docs.djangoproject.com/en/1.9/howto/static-files/
-
+    '''
     PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
     STATIC_ROOT = os.path.join(PROJECT_ROOT, 'staticfiles')
@@ -236,4 +239,4 @@ if 'ON_HEROKU' in os.environ:
     # Extra places for collectstatic to find static files.
     STATICFILES_DIRS = (
         os.path.join(PROJECT_ROOT, 'static'),
-    )
+    )'''
