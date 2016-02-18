@@ -169,6 +169,7 @@ ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_SIGNUP_FORM_CLASS = 'core.forms.SignupForm'
 LOGIN_REDIRECT_URL = '/projects/'
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 
 # Leaflet-django https://github.com/makinacorpus/django-leaflet
 LEAFLET_CONFIG = {

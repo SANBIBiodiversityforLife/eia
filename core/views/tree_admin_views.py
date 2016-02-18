@@ -9,6 +9,7 @@ import time
 
 
 def reset_taxa_tree(request):
+    return
     # Empty taxon table of everything and reload from the fixture with base classes (Aves & chiroptera, parents, and unknown)
     models.Taxon.objects.all().delete()
 
