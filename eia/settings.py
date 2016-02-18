@@ -238,7 +238,7 @@ if os.getcwd() == "/app":
 
     # Extra places for collectstatic to find static files.
     STATICFILES_DIRS = (
-        os.path.join(PROJECT_ROOT, 'core', 'static'),
+        os.path.join(os.path.dirname(PROJECT_ROOT), 'core', 'static'),
     )
     
     # Simplified static file serving.
