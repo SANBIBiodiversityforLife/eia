@@ -419,7 +419,7 @@ class PopulationData(models.Model):
     abundance_type_help = 'Abundance<br>type'
     abundance_type = models.CharField(max_length=1, choices=ABUNDANCE_TYPE_CHOICES, default='R', help_text=abundance_type_help)
 
-    flight_height_help = 'Flight/equipment<br>height range (m)'
+    flight_height_help = 'Bird flight/Bat equipment<br>height range (m) Format: "x-y" - e.g. "0-1".'
     flight_height = IntegerRangeField(help_text=flight_height_help)
 
     def get_flight_height_display(self):

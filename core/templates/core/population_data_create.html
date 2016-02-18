@@ -92,7 +92,7 @@ $(document).ready(function() {
     })
 
     // Handsontable options
-    hotOptions['colWidths'] = [240, 50, 100, 90, 80, 130];
+    hotOptions['colWidths'] = [240, 50, 100, 90, 80, 200];
     hotOptions['columns'] = [
       {
         type: 'autocomplete',
@@ -106,7 +106,7 @@ $(document).ready(function() {
         type: 'date',
         dateFormat: 'DD/MM/YYYY',
         correctFormat: true,
-        defaultDate: '01/01/2000'
+        defaultDate: new Date(),
       },
       {
         type: 'numeric',
