@@ -1,1 +1,1 @@
-web: gunicorn eia.wsgi
+web: gunicorn core.wsgi
