@@ -54,3 +54,12 @@ class FocalSiteJSONSerializer(CustomGeoJSONSerializer):
                      'centroid': obj.location.centroid.coords}
         self._current.update(additions)
         super(FocalSiteJSONSerializer, self).end_object(obj)
+
+
+class ProjectJSONSerializer(CustomGeoJSONSerializer):
+    def end_object(self, obj):
+        # This whole class can ONLY be used on our Project data because we're using explicit objects in this bit
+        additions = {'pk': smart_text(obj.pk, strings_only=True),
+                     'data_view_url': reverse('project_detail', kwargs={'pk': obj.pk})}
+        self._current.update(additions)
+        super(ProjectJSONSerializer, self).end_object(obj)

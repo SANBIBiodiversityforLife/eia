@@ -42,6 +42,10 @@ class Developer(models.Model):
     def get_absolute_url(self):
         return reverse('developer_detail', kwargs={'pk': self.pk})
 
+    # This is used when serializing data (focal sites geojson, etc) so that we don't get a meaningless number as output
+    def natural_key(self):
+        return self.__str__()
+
 
 class EquipmentMake(models.Model):
     """Normalising the turbine make to avoid typos and to make it easier to search by turbine make."""

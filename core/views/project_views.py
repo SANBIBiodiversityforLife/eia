@@ -184,10 +184,15 @@ def project_list(request):
     return render(request, 'core/project_list.html', {'projects': projects, 'filter': f})
 
 
+from core.serializers import ProjectJSONSerializer
 def projects_map(request):
     q = models.Project.objects.all().select_related('developer')
     f = ProjectFilter(request.GET, queryset=q)
-    geojsons = serialize('geojson', f)
+    #geojsons = serialize('geojson', f)
+    geojsons = serialize('geojson', f, geometry_field='location',
+                         fields=('id', 'pk', 'developer', 'name', 'location'),
+                         use_natural_foreign_keys=True)
+    geojsons = ProjectJSONSerializer().serialize(f, geometry_field='location', use_natural_foreign_keys=True, use_natural_primary_keys=True)
     return render(request, 'core/projects_map.html', {'geojson': geojsons, 'filter': f})
 
 

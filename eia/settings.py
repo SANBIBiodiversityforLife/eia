@@ -228,6 +228,7 @@ if os.getcwd() == "/app":
     
     
     DATABASES = {'default': dj_database_url.config(default='postgres://localhost')}
+    DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
     # Static files (CSS, JavaScript, Images)
     # https://docs.djangoproject.com/en/1.9/howto/static-files/
     

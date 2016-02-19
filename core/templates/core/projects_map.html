@@ -50,8 +50,8 @@
 function onEachFeature(feature, layer) {
   console.log(feature);
   if (feature.properties) {
-    var popupContent = '<h4>' + feature.properties.name + ' <small>' + feature.properties.developer.name + '</small></h4>';
-    popupContent += '<a href="/project/' + feature.properties.name + '" class="btn btn-default">View project</a>';
+    var popupContent = '<h4>' + feature.properties.name + ' <small>' + feature.properties.developer + '</small></h4>';
+    popupContent += '<a href="' + feature.properties.data_view_url + '" class="btn btn-default">View project</a>';
     layer.bindPopup(popupContent);
   }
 }
