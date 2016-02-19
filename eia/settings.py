@@ -246,3 +246,8 @@ if os.getcwd() == "/app":
     # https://warehouse.python.org/project/whitenoise/
 
     STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
+
+    # GEOS etc
+    # https://github.com/cirlabs/heroku-buildpack-geodjango/
+    GEOS_LIBRARY_PATH = os.environ.get('GEOS_LIBRARY_PATH')
+    GDAL_LIBRARY_PATH = os.environ.get('GDAL_LIBRARY_PATH')
