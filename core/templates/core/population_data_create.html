@@ -31,9 +31,12 @@
         <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span> Next
       </a>
     </div>
+
     <div class="step" id="step2">
       <span class="step-number">2</span>
       <h2>Add your data</h2>
+
+      <!-- Instructions -->
       <div class="step-instructions">
         <ul class="list-unstyled">
           <li>
@@ -45,7 +48,7 @@
             <span class="glyphicon glyphicon-tree-deciduous" aria-hidden="true"></span>
             The survey techniques used <strong>must correspond to the latest edition of the
             <a href="#">Birds and Wind-Energy Best-Practice Guidelines</a></strong>, (e.g. walked and driven transects,
-            fixed-point counts, checklist surveys)
+            fixed-point counts, checklist surveys) or the ?? for bats
           </li>
           <li>
             <span class="glyphicon glyphicon-indent-left" aria-hidden="true"></span>
@@ -62,7 +65,32 @@
           </li>
         </ul>
       </div>
+
+      <!-- Table example -->
+      <button id="showExamples" type="button" class="btn btn-warning">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> See an example
+      </button>
+      <div class="hot-example-wrapper"><table class="table hot-example">
+        <tbody><tr>
+          <td>Start typing common name or scientific name, e.g. <strong>"Eudyptes moseleyi"</strong> or <strong>"Northern Rockhopper"</strong>
+            <br><span class="glyphicon glyphicon-arrow-down" aria-hidden="true"></span></td>
+          <td>E.g. <strong>"2"</strong>
+            <br><span class="glyphicon glyphicon-arrow-down" aria-hidden="true"></span></td>
+          <td>Click the arrow in the right of the cell to bring up a calendar. E.g. <strong>"2011/11/01"</strong> or <strong>"01/11/2011"</strong>
+            <br><span class="glyphicon glyphicon-arrow-down" aria-hidden="true"></span></td>
+          <td>E.g. <strong>"23"</strong> for 11pm or <strong>"9"</strong> for 9am
+            <br><span class="glyphicon glyphicon-arrow-down" aria-hidden="true"></span></td>
+          <td>Relative abundance is per km<sup>2</sup>, Absolute is the total number counted. E.g. <strong>"Relative"</strong>
+            <br><span class="glyphicon glyphicon-arrow-down" aria-hidden="true"></span></td>
+          <td>E.g. <strong>"0-10"</strong> or <strong>"50-100"</strong>
+            <br><span class="glyphicon glyphicon-arrow-down" aria-hidden="true"></span></td>
+        </tr></tbody>
+      </table></div>
+
+      <!-- HOT table itself -->
       <div id="hot-wrapper"><div id="hot"></div></div>
+
+      <!-- Submit button -->
       <p><strong>Finished? Once you have pressed "Upload" you will be given the opportunity to add your raw data sheets or any documentation you might feel is useful.</strong></p>
       <button id="submitData" type="button" class="btn btn-primary">Upload</button>
       <a href="{% url 'population_data' project.id %}" type="button" class="btn btn-default">Cancel</a>
@@ -81,10 +109,13 @@
 <!-- Map -->
 <script src='{% static "leaflet-filelayer/leaflet.filelayer.js" %}'></script>
 <script src='{% static "leaflet-filelayer/togeojson/togeojson.js" %}'></script>
+<script src='{% static "temp-leaflet.forms.js" %}'></script> <!-- Temporary until update -->
 <script src='{% static "core/js/eia-filelayer.js" %}'></script>
 
 <!-- Hands On Table -->
 <script type="text/javascript">
+// Widths of the columns - this is also used for hot-examples.js included later
+widths = [240, 50, 100, 90, 80, 200];
 $(document).ready(function() {
     // Tooltips
     $(function () {
@@ -92,7 +123,7 @@ $(document).ready(function() {
     })
 
     // Handsontable options
-    hotOptions['colWidths'] = [240, 50, 100, 90, 80, 200];
+    hotOptions['colWidths'] = widths;
     hotOptions['columns'] = [
       {
         type: 'autocomplete',
@@ -130,6 +161,9 @@ $(document).ready(function() {
       $('#step2').show('fast', function() {
         // Function stored in init_hot.js
         init_hot();
+
+        // Fix example widths - see hot-examples.js
+        fixExampleWidths(widths);
 
         // Activate tooltips
         // Add IDs onto all the <th>s

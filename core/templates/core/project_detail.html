@@ -30,7 +30,7 @@
     <table class="table">
       <thead>
         <tr>
-          <th colspan="3">{{ project.get_energy_type_display }} energy equipment details</th>
+          <th colspan="3">Equipment details</th>
         </tr>
         <tr>
           <th>Make</th>
@@ -41,7 +41,7 @@
       <tbody>
         <tr>
           <td>{{ project.equipment_make }}</td>
-          <td>{{ project.equipment_capacity }}</td>
+          <td>{{ project.capacity }}</td>
           <td>{{ project.equipment_height }}</td>
         </tr>
       </tbody>
@@ -72,7 +72,7 @@
 {% endblock sub-content %}
 
 {% block data-list-js %}
-{% if turbine_locations %}<script src='{% static "core/js/leaflet_turbine_markers.js" %}'></script>{% endif %}
+{% if turbine_geojson %}<script src='{% static "core/js/leaflet_turbine_markers.js" %}'></script>{% endif %}
 <script type="text/javascript">
 function main_map_init(map, options) { // See http://blog.mathieu-leplatre.info/geodjango-maps-with-leaflet.html
     // Add the project polygon
@@ -82,15 +82,25 @@ function main_map_init(map, options) { // See http://blog.mathieu-leplatre.info/
     // Fit the map bounds to the project polygon
     map.fitBounds(project_polygon.getBounds());
 
-    {% if turbine_locations %}
+    {% if turbine_geojson %}
     // Add the turbine points (if there are any)
-    var turbine_points = new L.geoJson({% autoescape off %}{{ turbine_locations }}{% endautoescape %}, {
+    var equipment = new L.geoJson({% autoescape off %}{{ turbine_geojson }}{% endautoescape %}, {
       //style: myStyle,
       pointToLayer: function(feature, latlng) {
           return L.marker(latlng, {icon: turbineIcon});
       },
-    })
-    turbine_points.addTo(map);
+    });
+    equipment.addTo(map);
+    {% elif solar_geojson %}
+    // Otherwise add the solar polygons
+    var project_style = { fillOpacity: 0.3,
+                          fillColor: '#666666',
+                          weight: 1,
+                          color: '#666666' };
+    var equipment = new L.geoJson({% autoescape off %}{{ solar_geojson }}{% endautoescape %}, {
+      style: project_style,
+    });
+    equipment.addTo(map);
     {% endif %}
 
     // Add the solar... polygons?

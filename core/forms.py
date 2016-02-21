@@ -119,20 +119,33 @@ class FocalSiteCreateForm(forms.ModelForm):
 class ProjectUpdateOperationalInfoForm(forms.ModelForm):
     class Meta:
         model = models.Project
-        fields = ('operational_date', 'construction_date', 'turbine_locations', 'equipment_make', 'equipment_capacity',
-                  'equipment_height')
-        widgets = {'turbine_locations': LeafletWidget()}
+        fields = ('operational_date',
+                  'construction_date',
+                  'equipment_make',
+                  'capacity',
+                  'equipment_height',
+                  'turbine_locations',
+                  #'solar_locations'
+                  )
+        widgets = {'turbine_locations': LeafletWidget(),
+                   #'solar_locations': LeafletWidget()
+                   }
         help_texts = {
             'operational_date': 'The date the project first became operational',
             'construction_date': 'The date construction began on the project',
-            'turbine_locations': 'The locations of the turbines',
             'equipment_make': 'The make of the turbines/solar panels',
             'equipment_capacity': 'The capacity of the turbines/solar panels',
             'equipment_height': 'The height of the turbines/solar panels',
         }
 
-    #def clean(self):
-    #    import pdb; pdb.set_trace()
+    def __init__(self, *args, **kwargs):
+        energy_type = kwargs.pop('energy_type')
+        super(ProjectUpdateOperationalInfoForm, self).__init__(*args, **kwargs)
+
+        if energy_type == models.Project.SOLAR:
+            del self.fields['turbine_locations']
+        #elif energy_type == models.Project.WIND:
+        #    del self.fields['solar_locations']
 
 
 class ProjectUpdateForm(forms.ModelForm):

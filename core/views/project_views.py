@@ -15,6 +15,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 # JSON & serialization
 from django.http import JsonResponse
 from django.core.serializers import serialize
+from core.serializers import ProjectJSONSerializer
 
 
 class ProjectCreate(CreateView):
@@ -54,6 +55,11 @@ class ProjectUpdateOperationalInfo(UpdateView):
     model = models.Project
     template_name_suffix = '_update_operational_info_form'
     form_class = forms.ProjectUpdateOperationalInfoForm
+
+    def get_form_kwargs(self):
+        kwargs = super(ProjectUpdateOperationalInfo, self).get_form_kwargs()
+        kwargs['energy_type'] = self.object.energy_type
+        return kwargs
 
     def get_context_data(self, **kwargs):
         context = super(ProjectUpdateOperationalInfo, self).get_context_data(**kwargs)
@@ -133,31 +139,33 @@ class EquipmentMakeCreate(CreateView):
 @login_required
 def project_detail(request, pk):
     # Retrieve the project
-    project = models.Project.objects.filter(pk=pk)
+    project = models.Project.objects.get(pk=pk)
+
+    # Set up the context
+    context = {'project': project}
 
     # Get the project location geojson
-    project_location_geojson = serialize('geojson', project, geometry_field='location', fields=('location',))
+    context['project_location'] = serialize('geojson', [project], geometry_field='location', fields=('location',))
 
-    # Get the turbine location geojson
-    turbine_locations_geojson = serialize('geojson',
-                                          project,
-                                          geometry_field='turbine_locations',
-                                          fields=('turbine_locations',))
-
-    # Project is a queryset (from filter), as this is what geojson requires, now return the actual object
-    project = project[0]
+    # Get the equipment locations
+    '''if project.solar_locations:
+        context['solar_geojson'] = serialize('geojson',
+                                             [project],
+                                             geometry_field='solar_locations',
+                                             fields=('solar_locations',))'''
+    if project.turbine_locations:
+        context['turbine_geojson'] = serialize('geojson',
+                                               [project],
+                                               geometry_field='turbine_locations',
+                                               fields=('turbine_locations',))
 
     # Generate the documentation form for this dataset and get all the documents
-    documents = models.Document.objects.filter(project=project, metadata=None)
-    create_document_form = forms.DocumentCreateForm()
+    context['documents'] = models.Document.objects.filter(project=project, metadata=None)
+    context['create_document_form'] = forms.DocumentCreateForm()
 
     # Render the context
     return render_to_response('core/project_detail.html',
-                              {'project_location': project_location_geojson,
-                               'turbine_locations': turbine_locations_geojson,
-                               'project': project,
-                               'create_document_form': create_document_form,
-                               'documents': documents},
+                              context,
                               RequestContext(request))
 
 
@@ -184,7 +192,6 @@ def project_list(request):
     return render(request, 'core/project_list.html', {'projects': projects, 'filter': f})
 
 
-from core.serializers import ProjectJSONSerializer
 def projects_map(request):
     q = models.Project.objects.all().select_related('developer')
     f = ProjectFilter(request.GET, queryset=q)

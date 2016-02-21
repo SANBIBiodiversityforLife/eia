@@ -68,17 +68,21 @@ class Project(models.Model):
     name = models.CharField(max_length=50, unique=True, help_text='The official name of the project')
     developer = models.ForeignKey(Developer, help_text='The company doing the development work on the project')
 
+    # Keep a record of when this project was added to the database
+    uploaded_on = models.DateTimeField(auto_now_add=True)
+
     # Additional information
     location = models.PolygonField(help_text='<a href="#" onClick="startIntro()"  data-toggle="tooltip" data-placement="right" title="Click to learn how to use our maps">Learn how to use the map. You can load a KML or GPX, or draw a shape manually\
           <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span></a>.')
     objects = models.GeoManager()
     eia_number = models.CharField(max_length=20, help_text='The official number provided by DEA')
 
+    # TODO do we really need this? I mean, we have either turbine_locations or solar locations, so....
     WIND = 'W'
     SOLAR = 'S'
     ENERGY_TYPE_CHOICES = (
-        (WIND, 'Wind turbine'),
-        (SOLAR, 'Solar panels')
+        (WIND, 'Wind'),
+        (SOLAR, 'Solar')
     )
     energy_type = models.CharField(max_length=1, choices=ENERGY_TYPE_CHOICES, default=WIND, help_text='The type of renewable energy')
 
@@ -88,11 +92,11 @@ class Project(models.Model):
 
     # Turbine location needs to be stored as points, solar panels are polygons
     turbine_locations = models.MultiPointField(null=True, blank=True)
-    solar_panel_locations = models.PolygonField(null=True, blank=True)
+    #solar_locations = models.PolygonField(null=True, blank=True)
 
     # Store info about the turbines/solar panels
     equipment_make = models.ForeignKey(EquipmentMake, null=True, blank=True, help_text='The make and brand of the equipment')
-    equipment_capacity = models.DecimalField(null=True, blank=True, max_digits=6, decimal_places=2)
+    capacity = models.DecimalField(null=True, blank=True, max_digits=6, decimal_places=2, help_text='Nameplate capacity of the project')
     equipment_height = models.DecimalField(null=True, blank=True, max_digits=6, decimal_places=2)
 
     def get_absolute_url(self):
@@ -105,14 +109,22 @@ class Project(models.Model):
     def popup_content(self):
         return self.name + ' ' + self.developer
 
+    def get_last_activity(self):
+        last_metadata_upload = MetaData.objects.values_list('uploaded_on', flat=True).filter(project=self).order_by('uploaded_on').first()
+
+        if last_metadata_upload:
+            return last_metadata_upload
+        else:
+            return self.uploaded_on
+
     def clean(self):
         # Coordinate cannot be outside the bounds of the project
         if self.turbine_locations:
             if not self.location.contains(self.turbine_locations):
                 raise ValidationError({'turbine_locations': 'Turbine locations must be within the project bounds.'})
-        elif self.solar_panel_locations:
-            if not self.location.contains(self.solar_panel_locations):
-                raise ValidationError({'solar_panel_locations': 'Solar panel locations must be within the project bounds.'})
+        #elif self.solar_panel_locations:
+        #    if not self.location.contains(self.solar_panel_locations):
+        #        raise ValidationError({'solar_panel_locations': 'Solar panel locations must be within the project bounds.'})
 
     class Meta:
         permissions = (
@@ -225,7 +237,12 @@ class FocalSite(models.Model):
     Focal sites are locations of particular interest in projects.
     Data is collected and stored against each focal site.
     """
-    location = models.PolygonField(help_text='The area of the focal site, should be within 30km of the project area or it will not be associated with this project.')
+    location = models.PolygonField(help_text='The area of the focal site, should be within 30km of the project area '
+                                             'or it will not be associated with this project. <a href="#" '
+                                             'onClick="startIntro()"  data-toggle="tooltip" data-placement="right" '
+                                             'title="Click to learn how to use our maps">Learn how to use the map. '
+                                             'You can load a KML or GPX, or draw a shape manually\
+          <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span></a>.')
     objects = models.GeoManager()
     name = models.CharField(max_length=50, help_text='A name by which the focal site can be easily identified')
     sensitive = models.BooleanField(default=False, help_text='If the focal site concerns sensitive species and should not be visible to the public, select this.')

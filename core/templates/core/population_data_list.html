@@ -1,4 +1,11 @@
 {% extends "core/_base_data_list.html" %}
+{% load leaflet_tags %}
+{% load static %}
+
+{% block css %}
+{% leaflet_js %}
+{% leaflet_css %}
+{% endblock css %}
 
 {% block sub-content-heading %}
   Species population count, census and estimate data
@@ -8,6 +15,14 @@
 {% endblock %}
 
 {% block table %}
+  <!-- Population map -->
+  <h4>Survey area for dataset
+  {% if not project_area %}
+    <small>Area surveyed was entire project area</small>
+  {% endif %}
+  </h4>
+  {% leaflet_map "survey_area" callback="main_map_init" %}
+
   <!-- Population data table -->
   <table class="table table-striped">
     <thead>
@@ -31,4 +46,37 @@
     {% endfor %}
     </tbody>
   </table>
+{% endblock %}
+
+{% block sub-js %}
+<script type="text/javascript">
+function main_map_init(map, options) {
+    var s = new L.geoJson({% autoescape off %}{{ survey_area }}{% endautoescape %});
+    s.addTo(map);
+
+    {% if project_area %}
+    var project_style = { fillOpacity: 0.3,
+                          fillColor: '#666666',
+                          weight: 1,
+                          color: '#666666' };
+    var p = new L.geoJson({% autoescape off %}{{ project_area }}{% endautoescape %},
+                          {style: project_style});
+    p.addTo(map);
+    {% endif %}
+
+    // Fit the map bounds to the
+    map.fitBounds(s.getBounds());
+
+    {% if turbine_locations %}
+    // Add the turbine points (if there are any)
+    var turbine_points = new L.geoJson({% autoescape off %}{{ turbine_locations }}{% endautoescape %}, {
+      //style: myStyle,
+      pointToLayer: function(feature, latlng) {
+          return L.marker(latlng, {icon: turbineIcon});
+      },
+    })
+    turbine_points.addTo(map);
+    {% endif %}
+}
+</script>
 {% endblock %}

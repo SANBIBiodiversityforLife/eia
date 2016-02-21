@@ -155,3 +155,35 @@ dd, dt {
 #modalMessageSuccess {
     display: none;
 }
+
+/* HOT examples */
+.hot-example {
+    /*background-color: #fffce0;
+    border-right: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;*/
+    margin-bottom: 0px !important;
+}
+.hot-example td:hover {
+    background-color: #fffbd1;
+}
+.hot-example td {
+    /*border-left: 1px solid #ddd;*/
+    background-color: #fffce0;
+    vertical-align: bottom !important;
+    font-size: 12px;
+}
+#showExamples {
+    margin: 0 0 15px 0;
+}
+.hot-example-wrapper {
+    -webkit-box-align:center;
+    -webkit-box-pack:center;
+    display:-webkit-box;
+    -moz-box-align:center;
+    -moz-box-pack:center;
+    display:-moz-box;
+}
+
+#survey_area {
+    min-height: 200px;
+}

@@ -40,7 +40,7 @@
       <th>Developer</th>
       <th>Energy</th>
       <th>Last activity</th>
-      <th>Project operational</th>
+      <th>Project operational date</th>
     </tr>
   </thead>
   <tbody>
@@ -49,8 +49,8 @@
         <td><a href="{% url 'project_detail' pk=project.id %}">{{ project }}</a></td>
         <td>{{ project.developer }}</td>
         <td>{{ project.get_energy_type_display }}</td>
+        <td>{{ project.get_last_activity }}</td>
         <td>{{ project.operational_date }}</td>
-        <td>{{ project.developer }}</td>
     </tr>
 {% endfor %}
   </tbody>

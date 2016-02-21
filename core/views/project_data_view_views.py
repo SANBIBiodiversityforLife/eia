@@ -75,6 +75,15 @@ def population_data(request, pk, metadata_pk=None):
     # Retrieve the project
     response_data['project'] = models.Project.objects.get(pk=pk)
 
+    # If we have any data to display
+    if 'data_set' in response_data:
+        # If the survey area is different to the project area we need to display both
+        if response_data['project'].location != response_data['data_set'][0].location:
+            response_data['project_area'] = serialize('geojson', [response_data['project']], geometry_field='location', fields=('location',))
+
+        # Geojson the survey area - note they are the same for the entire dataset
+        response_data['survey_area'] = serialize('geojson', [response_data['data_set'][0]], geometry_field='location', fields=('location',))
+
     # Render the context
     return render_to_response('core/population_data_list.html',
                               response_data,
