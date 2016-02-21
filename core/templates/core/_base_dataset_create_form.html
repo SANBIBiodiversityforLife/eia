@@ -13,12 +13,12 @@
   <li><a href="{% url 'projects_list' %}">Projects</a></li>
   <li><a href="{% url 'project_detail' pk=project.id %}">{{ project.name }}</a></li>
   <li>{% block parent-link %}{% endblock %}</li>
-  <li class="active">Upload {% block breadcrumb-text %}{% endblock %} data</li>
+  <li class="active">Add {% block breadcrumb-text %}{% endblock %} data</li>
 </ol>
 {% endblock breadcrumb %}
 
 {% block header-text %}
-  Upload {% block header-detail-text %}{% endblock %} data <small>Record your population estimates for each species.</small>
+  Add {% block header-detail-text %}{% endblock %} data
 {% endblock header-text %}
 
 {% block content %}
@@ -43,7 +43,7 @@
           <div class="alert alert-danger" role="alert">
               <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
               <strong><span class="sr-only">Error:</span> Oops! There was a technical error.</strong><hr>
-              <p>Please <a href="{% url 'population_data_create' project_pk=project.id %}">try again</a>.</p>
+              <p>Please <a href="#" onClick="location.reload();">try again</a>.</p>
               <p>If this error keeps occurring, please contact one of the technical staff with the following message: <div id="serverErrorMessage"></div></p>
           </div>
       </div>

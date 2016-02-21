@@ -20,7 +20,7 @@ function startIntro(){
         },
         {
           element: document.querySelector('.leaflet-draw-toolbar-top'),
-          intro: "Use these tools to draw a polygon or a square. When drawing a polygon, remember to click back into the first point that you made on the map.",
+          intro: "Click on one of these tools to start drawing a polygon (e.g. triangle) or a square. When drawing a polygon, remember to click back into the first point that you made on the map.",
           position: 'right'
         },
         {
