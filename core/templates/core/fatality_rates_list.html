@@ -21,6 +21,8 @@
     <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add fatality rates</a></small>
   </h3>
   {% endif %}
+  <p><em>This section shows a more accurate valuation of the number of fatalities occurring in
+    a project area, as estimated after taking into account searcher efficiency and scavenger rates (below).</em></p>
   {% if fatality_rates %}
     {% include 'core/_include_fatality_rate_table.html' with data_set=fatality_rates %}
   {% else %}
@@ -35,6 +37,9 @@
     <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add searcher efficiency rates</a></small>
   </h3>
   {% endif %}
+  <p><em>This section records the percentage of corpses likely
+    to have been missed by search parties on the ground (due to vegetation cover, etc).
+    It should be estimated based on ? guidelines.</em></p>
   {% if searcher_rates %}
     {% include 'core/_include_fatality_rate_table.html' with data_set=searcher_rates %}
   {% else %}
@@ -49,6 +54,9 @@
     <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add scavenger removal rates</a></small>
   </h3>
   {% endif %}
+  <p><em>This section records the percentage of corpses likely
+    to have been removed by scavengers from a project site.
+    It should be estimated based on ? guidelines.</em></p>
   {% if scavenger_rates %}
     {% include 'core/_include_fatality_rate_table.html' with data_set=scavenger_rates %}
 

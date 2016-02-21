@@ -18,6 +18,11 @@
 {% endblock %}
 
 {% block map %}
+  <p><em>This section records the corpses found for this project.
+    Each corpse has a probable cause of death, and is represented as a point on the map.
+    The number of fatalities as estimated after searcher efficiency and scavenger removal
+    rates have been taken into account is stored in the
+    <a href="{% url 'fatality_rates' project.id %}">Fatality rates</a> section.</em></p>
 {% if fatality_locations %}
   {% leaflet_map "main" callback="main_map_init" %}
 {% else %}
@@ -25,7 +30,7 @@
 {% endblock %}
 
 {% block table %}
-  <!-- Population data table -->
+  <!-- Data table -->
   <table class="table table-striped">
     <thead>
       <tr>

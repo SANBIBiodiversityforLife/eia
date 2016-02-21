@@ -17,6 +17,10 @@
 {% endblock %}
 
 {% block map %}
+  <p><em>This section records censuses
+    for a particular area of interest (a "focal site", such as a wetland or cave).
+    Focal sites are not tied to a particular project - i.e. two neighbouring projects might both contribute census data
+    for the same focal site.</em></p>
 {% if focal_site_locations %}
   {% leaflet_map "main" callback="main_map_init" %}
 {% else %}

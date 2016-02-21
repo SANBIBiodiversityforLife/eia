@@ -14,6 +14,13 @@
   </a>{% endif %}
 {% endblock %}
 
+{% block map %}
+<p><em>This section records relative population abundance, i.e. estimated per km<sup>2</sup>,
+  and absolute numbers, i.e. the actual number of birds counted for the surveyed area. Censuses
+  for a particular area of interest (a "focal site", such as a wetland or cave) are recorded in the
+  <a href="{% url 'focal_site_data' project.id %}">Focal sites</a> section.</em></p>
+{% endblock %}
+
 {% block table %}
   <!-- Population map -->
   <h4>Survey area for dataset
