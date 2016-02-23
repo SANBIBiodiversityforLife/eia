@@ -251,3 +251,10 @@ if os.getcwd() == "/app":
     # https://github.com/cirlabs/heroku-buildpack-geodjango/
     GEOS_LIBRARY_PATH = os.environ.get('GEOS_LIBRARY_PATH')
     GDAL_LIBRARY_PATH = os.environ.get('GDAL_LIBRARY_PATH')
+
+    # Sendgrid settings for smtp
+    EMAIL_HOST = 'smtp.sendgrid.net'
+    EMAIL_HOST_USER = 'sendgrid_username'
+    EMAIL_HOST_PASSWORD = 'sendgrid_password'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
