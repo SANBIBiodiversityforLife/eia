@@ -154,6 +154,24 @@ class ProjectUpdateForm(forms.ModelForm):
         fields = ('name', 'location', 'developer', 'eia_number', 'energy_type')
         widgets = {'location': LeafletWidget()}
 
+    '''def __init__(self, *args, **kwargs):
+        super(ProjectUpdateForm, self).__init__(*args, **kwargs)
+
+        self.fields['location'].widget = LeafletWidget(attrs={
+            'settings_overrides': {
+                'DEFAULT_CENTER': (-33.0, 29.0),
+                'DEFAULT_ZOOM': 11,
+            }
+        })
+
+        import pdb; pdb.set_trace()
+
+        attrs={
+            'settings_overrides': {
+                'DEFAULT_CENTER': (6.0, 45.0),
+            }
+        }'''
+
 
 class ProjectDeleteForm(forms.ModelForm):
     class Meta:

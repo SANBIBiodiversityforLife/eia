@@ -61,17 +61,18 @@
 <!-- Form -->
 <script src='{% static "jquery.form.min.js" %}'></script>
 <script src='{% static "validator.min.js" %}'></script>
+
+<!-- Filelayer -->
 <script src='{% static "leaflet-filelayer/leaflet.filelayer.js" %}'></script>
 <script src='{% static "leaflet-filelayer/togeojson/togeojson.js" %}'></script>
 <script src='{% static "core/js/eia-filelayer.js" %}'></script>
+
 <script language="javascript">
   $(document).ready(function() {
     // A bit hacky, but we have to add the 'add x buttons' in separately
     add_developer = $('#id_developer').parent();
     developer_text = '<div class="col-md-4" style="padding-top: 7px">Developer not in the list? <a data-toggle="modal" data-target="#developerModal" class="" href="#" role="button">Add a developer</a></div>';
     add_developer.parent().append(developer_text);
-
-    // Adding the map help to the side as well.
 
     // Ajax the form
     var options = {
@@ -90,4 +91,6 @@
     $('#developerForm').ajaxForm(options);
   })
 </script>
+{% block sub-js %}
+{% endblock %}
 {% endblock %}

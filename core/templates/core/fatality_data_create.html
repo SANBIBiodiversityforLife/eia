@@ -3,7 +3,7 @@
 {% load static %}
 
 {% block parent-link %}<a href="{% url 'fatality_data' project.id %}">Fatality data</a>{% endblock %}
-{% block breadcrumb-text %}{% block header-detail-text %}fatality site{% endblock %}{% endblock %}
+{% block breadcrumb-text %}{% block header-detail-text %}fatality{% endblock %}{% endblock %}
 
 {% block upload-form %}
   <form role="form" class="data-upload-form" action="" method="post">{% csrf_token %}

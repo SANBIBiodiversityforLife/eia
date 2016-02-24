@@ -8,7 +8,7 @@
 {% endblock css %}
 
 {% block sub-content-heading %}
-  Species population count, census and estimate data
+  Species population count, census and activity data
   {% if perms.core.contributor %}<a href="{% url 'population_data_create' project.id %}" type="button" class="btn btn-info pull-right">
   <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add population data
   </a>{% endif %}

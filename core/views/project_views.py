@@ -35,6 +35,12 @@ class ProjectUpdate(UpdateView):
     template_name_suffix = '_update_form'
     form_class = forms.ProjectUpdateForm
 
+    '''def get_form_kwargs(self):
+        kwargs = super(ProjectUpdate, self).get_form_kwargs()
+        import pdb; pdb.set_trace()
+        # kwargs['bounds'] = self.object.energy_type
+        return kwargs'''
+
     def get_context_data(self, **kwargs):
         context = super(ProjectUpdate, self).get_context_data(**kwargs)
 

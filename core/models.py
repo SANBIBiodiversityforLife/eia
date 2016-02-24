@@ -7,6 +7,11 @@ from mptt.models import MPTTModel, TreeForeignKey
 import re
 from django.contrib.postgres.fields import IntegerRangeField
 
+map_help = '<a href="#" onClick="startIntro()"  data-toggle="tooltip" data-placement="right" title="Click to ' \
+           'learn how to use our maps">Learn how to use the map. You can load a KML or GPX, or draw a shape manually\
+          <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span></a>.'
+
+
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     #first_name = models.CharField(max_length=100)
@@ -72,8 +77,7 @@ class Project(models.Model):
     uploaded_on = models.DateTimeField(auto_now_add=True)
 
     # Additional information
-    location = models.PolygonField(help_text='<a href="#" onClick="startIntro()"  data-toggle="tooltip" data-placement="right" title="Click to learn how to use our maps">Learn how to use the map. You can load a KML or GPX, or draw a shape manually\
-          <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span></a>.')
+    location = models.PolygonField(help_text='This should give users a rough idea of the study area. ' + map_help)
     objects = models.GeoManager()
     eia_number = models.CharField(max_length=20, help_text='The official number provided by DEA')
 
@@ -164,7 +168,7 @@ class Taxon(MPTTModel):
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
 
     # It is important to know when this name was last updated
-    updated = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     # We want to keep a list of root taxa rather than getting all birds & bats
     # This way our taxa building tree mechanism is more robust & flexible
@@ -238,11 +242,7 @@ class FocalSite(models.Model):
     Data is collected and stored against each focal site.
     """
     location = models.PolygonField(help_text='The area of the focal site, should be within 30km of the project area '
-                                             'or it will not be associated with this project. <a href="#" '
-                                             'onClick="startIntro()"  data-toggle="tooltip" data-placement="right" '
-                                             'title="Click to learn how to use our maps">Learn how to use the map. '
-                                             'You can load a KML or GPX, or draw a shape manually\
-          <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span></a>.')
+                                             'or it will not be associated with this project. ' + map_help)
     objects = models.GeoManager()
     name = models.CharField(max_length=50, help_text='A name by which the focal site can be easily identified')
     sensitive = models.BooleanField(default=False, help_text='If the focal site concerns sensitive species and should not be visible to the public, select this.')
@@ -387,8 +387,10 @@ class Document(models.Model):
     EIA = 'E'
     OTHER = 'O'
     RAW = 'R'
+    GEO = 'G'
     DOCUMENT_TYPE_CHOICES = (
         (EIA, 'EIA report'),
+        (GEO, 'Geographic data'),
         (OTHER, 'Other'),
         (RAW, 'Raw data')
     )
@@ -441,7 +443,7 @@ class PopulationData(models.Model):
     abundance_type = models.CharField(max_length=1, choices=ABUNDANCE_TYPE_CHOICES, default='R', help_text=abundance_type_help)
 
     flight_height_help = 'Bird flight/Bat equipment<br>height range (m) Format: "x-y" - e.g. "0-1".'
-    flight_height = IntegerRangeField(help_text=flight_height_help)
+    flight_height = IntegerRangeField(help_text=flight_height_help, null=True, blank=True)
 
     def get_flight_height_display(self):
         return str(self.flight_height.lower) + ' - ' + str(self.flight_height.upper) + 'm'
@@ -503,15 +505,16 @@ class FocalSiteData(models.Model):
     # Only applicable to birds
     activity_choices_help = 'Activity (only <br>applicable to birds)'
     ACTIVITY_CHOICES = (
-        ('CDP', 'courtship display'),
-        ('CAN', 'adult bird carrying nesting material'),
-        ('ANB', 'active nest building'),
-        ('NCN', 'newly completed nest'),
-        ('NWE', 'nest with eggs'),
-        ('NWC', 'nest with chicks'),
-        ('PFY', 'parents feeding young in nest'),
-        ('PFS', 'parents with fecal sac'),
-        ('PAY', 'parents and young not in nest')
+        ('CDP', 'Courtship display'),
+        ('CAN', 'Adult bird carrying nesting material'),
+        ('ANB', 'Active nest building'),
+        ('NCN', 'Newly completed nest'),
+        ('NWE', 'Nest with eggs'),
+        ('NWC', 'Nest with chicks'),
+        ('PFY', 'Parents feeding young in nest'),
+        ('PFS', 'Parents with fecal sac'),
+        ('PAY', 'Parents and young not in nest'),
+        ('NON', 'None')
     )
     activity = models.CharField(max_length=3, choices=ACTIVITY_CHOICES, null=True, blank=True,
                                 help_text=activity_choices_help)

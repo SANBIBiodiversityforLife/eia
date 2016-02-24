@@ -1,42 +1,6 @@
 [
    {
       "fields":{
-         "type":"DE",
-         "phone":"0217998997",
-         "user":1
-      },
-      "model":"core.profile",
-      "pk":1
-   },
-   {
-      "fields":{
-         "name":"Test",
-         "email":"test@test.com",
-         "phone":"123"
-      },
-      "model":"core.developer",
-      "pk":1
-   },
-   {
-      "fields":{
-         "construction_date":null,
-         "equipment_capacity":null,
-         "equipment_make":null,
-         "eia_number":"123",
-         "developer":1,
-         "energy_type":"W",
-         "name":"Test",
-         "operational_date":null,
-         "equipment_height":null,
-         "location":"SRID=4326;POLYGON ((19.8413085937500000 -31.7281671460239350, 18.7426757812500000 -32.3614033152754170, 20.9399414062499960 -32.5838493256566080, 19.8413085937500000 -31.7281671460239350))",
-         "solar_panel_locations":null,
-         "turbine_locations":null
-      },
-      "model":"core.project",
-      "pk":1
-   },
-   {
-      "fields":{
          "red_list":"LC",
          "updated":"2016-02-04T10:16:41.726Z",
          "level":0,

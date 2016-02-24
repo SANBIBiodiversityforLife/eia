@@ -103,9 +103,8 @@ function main_map_init(map, options) { // See http://blog.mathieu-leplatre.info/
     equipment.addTo(map);
     {% endif %}
 
-    // Add the solar... polygons?
-
-    // Data points?
+    // Reset map view
+    (new L.Control.ResetView(project_polygon.getBounds().pad(0.5))).addTo(map);
 }
 </script>
 {% endblock %}

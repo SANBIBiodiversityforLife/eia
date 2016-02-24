@@ -19,18 +19,19 @@ from core import views
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import TemplateView
 
 urlpatterns = [
     # Django allauth
     url(r'^accounts/', include('allauth.urls')),
-    url(r'^accounts/profile/$', login_required(views.TemplateView.as_view(template_name='account/profile.html')), name='profile_detail'),
-    url(r'^accounts/profile/(?P<pk>[0-9]+)$', login_required(views.TemplateView.as_view(template_name='account/profile.html')), name='profile_detail'),
+    url(r'^accounts/profile/$', login_required(TemplateView.as_view(template_name='account/profile.html')), name='profile_detail'),
+    url(r'^accounts/profile/(?P<pk>[0-9]+)$', login_required(TemplateView.as_view(template_name='account/profile.html')), name='profile_detail'),
     url(r'^accounts/profile/edit$', login_required(views.ProfileUpdate.as_view()), name='profile_update'),
     url(r'^accounts/profile/request_status/(?P<status>request_(trusted|contributor))/$', login_required(views.request_status), name='request_status'),
 
     # Admin section
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^admin/reset_taxonomy/$', login_required(views.reset_taxa_tree), name='admin_reset_taxa_tree'),
+    url(r'^admin/reset_taxonomy/$', login_required(views.ResetTaxaTree.as_view()), name='admin_reset_taxa_tree'),
     url(r'^admin/sync_iucn_redlisting/$', login_required(views.sync_iucn_redlisting), name='admin_sync_iucn_redlisting'),
 
     # Front page

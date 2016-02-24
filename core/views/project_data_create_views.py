@@ -349,6 +349,7 @@ class FatalityRateCreate(CreateView):
         context = super(FatalityRateCreate, self).get_context_data(**kwargs)
         #self.project_pk = self.kwargs['project_pk']
         context['project'] = models.Project.objects.get(pk=self.kwargs['project_pk'])
+        kwargs['rate_type'] = models.FatalityRate.FATALITY
         return context
 
 """

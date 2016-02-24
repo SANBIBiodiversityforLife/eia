@@ -20,3 +20,19 @@
 {% block form-buttons %}
 <a href="{% url 'project_detail' project.pk %}" type="button" class="btn btn-danger pull-right">Cancel</a>
 {% endblock %}
+
+{% block sub-js %}
+<script language="javascript">
+  $(document).ready(function() {
+    // Add reset view button
+    $(window).on('map:init', function(e) {
+      map = e.originalEvent.detail.map;
+
+      map.eachLayer(function(layer) {
+        var project_geojson_layer = L.geoJson({{ project_geojson|safe }});
+        (new L.Control.ResetView(project_geojson_layer.getBounds().pad(0.5))).addTo(map);
+      });
+    });
+  })
+</script>
+{% endblock %}

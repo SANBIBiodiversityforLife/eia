@@ -75,16 +75,24 @@
 {% endblock content %}
 
 {% block js %}
+<!-- Map help -->
+<script src='{% static "node_modules/intro.js/minified/intro.min.js" %}'></script>
+<script src='{% static "core/js/map-help.js" %}'></script>
+
+<!-- Form -->
 <script src='{% static "jquery.form.min.js" %}'></script>
 <script src='{% static "validator.min.js" %}'></script>
 <script src='{% static "datetimepicker/jquery.datetimepicker.js" %}'></script>
-<script src='{% static "core/js/leaflet_turbine_markers.js" %}'></script>
 
 <!-- Filelayer -->
 <script src='{% static "leaflet-filelayer/leaflet.filelayer.js" %}'></script>
 <script src='{% static "leaflet-filelayer/togeojson/togeojson.js" %}'></script>
 <script src='{% static "core/js/eia-filelayer-points.js" %}'></script>
 <script src='{% static "temp-leaflet.forms.js" %}'></script> <!-- Temporary until update -->
+
+<!-- Turbine markers -->
+<script src='{% static "core/js/leaflet_turbine_markers.js" %}'></script>
+
 <script language="javascript">
   $(document).ready(function() {
     // Store references to the maps for later use
@@ -99,6 +107,9 @@
       var project_geojson_layer = L.geoJson({{ project_geojson|safe }});
       turbine_map_project_polygon = project_geojson_layer.addTo(turbine_map);
       turbine_map.fitBounds(project_geojson_layer.getBounds().pad(0.5));
+
+      // Add reset functionality https://github.com/makinacorpus/django-leaflet/issues/39
+      (new L.Control.ResetView(project_geojson_layer.getBounds().pad(0.5))).addTo(map);
     });
 
     // When the form is clicked, remove the project polygon from the turbine map to prevent validation errors
