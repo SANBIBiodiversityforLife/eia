@@ -77,19 +77,19 @@ def population_data_create(request, project_pk):
                 abundance_type_choices = {v: k for k, v in dict(models.PopulationData.ABUNDANCE_TYPE_CHOICES).items()}
                 abundance_type = abundance_type_choices[row[4]]  # At this stage it will raise a KeyError if the key is not found
 
-                # Flight height integer range
-                flight_height = row[5].split('-')
-                flight_height = (int(flight_height[0]), int(flight_height[1]))
-                print('flight')
-
                 # Create - does this validate? i hope so
                 obj = models.PopulationData(metadata=metadata,
                                             taxon=taxon,
                                             observed=observed,
                                             abundance=count,
                                             abundance_type=abundance_type,
-                                            flight_height=flight_height,
                                             location=request.POST['location'])
+
+                # Flight height integer range
+                if row[5]:
+                    flight_height = row[5].split('-')
+                    flight_height = (int(flight_height[0]), int(flight_height[1]))
+                    obj.flight_height = flight_height
 
                 # Add to the list
                 objects.append(obj)

@@ -430,7 +430,7 @@ class PopulationData(models.Model):
     observed_help = observed_help_text
     observed = models.DateTimeField(help_text=observed_help)
 
-    abundance_help = 'Count'
+    abundance_help = 'Count/<br>passes'
     abundance = models.IntegerField(help_text=abundance_help)
 
     RELATIVE = 'R'
@@ -446,7 +446,10 @@ class PopulationData(models.Model):
     flight_height = IntegerRangeField(help_text=flight_height_help, null=True, blank=True)
 
     def get_flight_height_display(self):
-        return str(self.flight_height.lower) + ' - ' + str(self.flight_height.upper) + 'm'
+        if self.flight_height:
+            return str(self.flight_height.lower) + ' - ' + str(self.flight_height.upper) + 'm'
+        else:
+            return ''
 
     location = models.PolygonField()
     objects = models.GeoManager()
