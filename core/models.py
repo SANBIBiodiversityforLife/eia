@@ -215,7 +215,7 @@ class Taxon(MPTTModel):
         ('LC', 'Least Concern'),
         ('DD', 'Data Deficient')
     )
-    red_list = models.CharField(max_length=2, choices=red_list_choices, default='LC')
+    red_list = models.CharField(max_length=2, choices=red_list_choices, null=True, blank=True)
 
     # I am not sure about where sensitive species will come from
     sensitive = models.BooleanField(default=False)

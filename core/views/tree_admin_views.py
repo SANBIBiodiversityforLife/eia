@@ -29,7 +29,7 @@ class ResetTaxaTree(RedirectView):
     pattern_name = 'admin'
 
     def get_redirect_url(self, *args, **kwargs):
-        self.reset_taxa_tree()
+        # self.reset_taxa_tree()
         return super(ResetTaxaTree, self).get_redirect_url(*args, **kwargs)
 
     def reset_taxa_tree(self):
@@ -55,7 +55,7 @@ class ResetTaxaTree(RedirectView):
         offset = 0
 
         while not end_of_records:
-            # Get the data, sometimes this times out so just wait a few seconds and try again
+            # Get the data
             r = get_api_info(settings.GBIF_API_CHILDREN_URL.format(id=parent_id, offset=offset))
 
             # Get the jsoned data
