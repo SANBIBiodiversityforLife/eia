@@ -1,0 +1,1 @@
+[{"model": "account.emailaddress", "pk": 1, "fields": {"user": 2, "email": "r.johaadien@sanbi.org.za", "verified": true, "primary": true}}]

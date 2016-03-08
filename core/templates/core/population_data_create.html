@@ -4,14 +4,20 @@
 {% load static %}
 
 {% block sub-css %}
+<!-- Intro.js (mapping help) -->
 <link href='{% static "node_modules/intro.js/minified/introjs.min.css" %}' rel="stylesheet">
 <style>
 .introjs-fixParent {
   position: relative !important;
 }
 </style>
+
+<!-- Leaflet -->
 {% leaflet_js plugins="forms,draw" %}
 {% leaflet_css plugins="forms,draw" %}
+
+<!-- Chosen -->
+<link href='{% static "chosen/chosen.min.css" %}' rel="stylesheet">
 {% endblock %}
 
 {% block parent-link %}<a href="{% url 'population_data' project.id %}">Population data</a>{% endblock %}
@@ -25,8 +31,11 @@
       <p>The project area is pre-loaded by default. If your data comes from a smaller area within the project area,
         <a href="#" onClick="startIntro()"  data-toggle="tooltip" data-placement="right" title="Click to learn how to use our maps">load a KML or GPX, or draw it in on the map
           <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span></a>.</p>
-      {% bootstrap_form_errors map_form %}
-      {% bootstrap_form map_form %}
+
+          {% bootstrap_form_errors map_form %}
+          {% for field in map_form %}
+            {% if field.name == "location" %}{% bootstrap_field field %}{% endif %}
+          {% endfor %}
       <a id="stepLink" href="#step2" class="btn btn-default">
         <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span> Next
       </a>
@@ -34,6 +43,17 @@
 
     <div class="step" id="step2">
       <span class="step-number">2</span>
+      <h2>How was your data collected?</h2>
+      {% for field in map_form %}
+        {% if field.name != "location" %}{% bootstrap_field field %}{% endif %}
+      {% endfor %}
+      <a id="stepLink2" href="#step3" class="btn btn-default">
+        <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span> Next
+      </a>
+    </div>
+
+    <div class="step" id="step3">
+      <span class="step-number">3</span>
       <h2>Add your data</h2>
 
       <!-- Instructions -->
@@ -112,15 +132,19 @@
 <script src='{% static "temp-leaflet.forms.js" %}'></script> <!-- Temporary until update -->
 <script src='{% static "core/js/eia-filelayer.js" %}'></script>
 
-<!-- Hands On Table -->
+<!-- Hands On Table, Tooltips and Chosen -->
+<script src='{% static "chosen/chosen.jquery.min.js" %}'></script>
 <script type="text/javascript">
 // Widths of the columns - this is also used for hot-examples.js included later
 widths = [240, 50, 100, 90, 80, 200];
-$(document).ready(function() {
+$(document).ready(function() { console.log(L.Browser.touch);
     // Tooltips
     $(function () {
       $('[data-toggle="tooltip"]').tooltip()
     })
+
+    // Chosen
+    $("select#id_survey_type").chosen();
 
     // Handsontable options
     hotOptions['colWidths'] = widths;
@@ -157,27 +181,43 @@ $(document).ready(function() {
       }
     ];
 
-    // We only want to initalise handsontable once the div is visible
+    // Hide step divs
+    $('#upload-form-wrapper #step2').hide();
+    $('#upload-form-wrapper #step3').hide();
+
+    // Show step divs when you click through
     $('#stepLink').click(function() {
-      // Show the div
-      $('#step2').show('fast', function() {
-        // Function stored in init_hot.js
-        init_hot();
-
-        // Fix example widths - see hot-examples.js
-        fixExampleWidths(widths);
-
-        // Activate tooltips
-        // Add IDs onto all the <th>s
-        //$('table.htCore>thead>tr>th').attr('id', function(i) {
-        //  return 'tablehead' + (i + 1);
-        //});
-      });
+      $('#upload-form-wrapper #step2').show('fast');
 
       // Smooth scrolling for the next button
       $('html, body').animate({
           scrollTop: $( $.attr(this, 'href') ).offset().top
-      }, 500);
+      }, 200);
+    });
+
+    // We only want to initalise handsontable once the div is visible
+    $('#stepLink2').click(function() {
+      // Check that they've filled in some values
+      if($('#id_hours').val().length === 0) {
+        $('#id_hours').parent().addClass('has-error');
+        return false;
+      }
+
+      // Show the div, if it's not already visible
+      if($('#step3').is(':hidden')) {
+        $('#step3').show('fast', function() {
+          // Function to initialise handsontable is stored in init_hot.js
+          init_hot();
+
+          // Fix example widths - see hot-examples.js
+          fixExampleWidths(widths);
+        });
+      }
+
+      // Smooth scrolling for the next button
+      $('html, body').animate({
+          scrollTop: $( $.attr(this, 'href') ).offset().top
+      }, 400);
 
       // StepLink click should return false
       return false;

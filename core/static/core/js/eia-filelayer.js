@@ -1,8 +1,11 @@
 $(document).ready(function() {
     // This function is called when the map initializes (automatically via django-leaflet)
     $(window).on('map:init', function(e) {
+
+        console.log(e);
         // Get a reference to the map
-        map = e.originalEvent.detail.map;
+        //map = e.originalEvent.detail.map;
+        map = e.detail.map;
 
         // Store the featureGroup (drawnItems) which django-leaflet's drawControl uses to submit to the form
         var drawnItems;

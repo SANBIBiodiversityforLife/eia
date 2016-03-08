@@ -58,11 +58,8 @@ dd, dt {
 #upload-form-wrapper h2 {
     font-size: 22px;
 }
-#upload-form-wrapper #step2 {
-    background-color: #FFF5AA;
-}
 #upload-form-wrapper .step-instructions ul, #upload-form-wrapper .step-instructions p {
-    width: 700px;
+/*    width: 700px;*/
     margin: 10px auto;
 }
 #upload-form-wrapper .step-instructions ul li:hover {
@@ -76,23 +73,20 @@ dd, dt {
 #upload-form-wrapper .step-instructions ul li:last-child {
     border-bottom: 0;
 }
+#upload-form-wrapper .step:hover {
+    background-color: #FFF5AA;
+}
 #upload-form-wrapper .step {
-    padding: 15px;
+    padding: 15px 10% 15px 10%;
     margin: 0 10% 10px 10%;
     text-align: center;
     background-color: #FFFBCC;
-}
-#upload-form-wrapper #step3 .form-group {
-    overflow: auto;
-}
-#upload-form-wrapper #step3 h2 {
-    margin-bottom: 40px;
 }
 #upload-form-wrapper span.help-block {
     text-align: left;
 }
 #upload-form-wrapper label {
-    text-align: right;
+    /*text-align: right;*/
 }
 #upload-form-wrapper .step-number {
     border: 1px solid rgb(255, 232, 204);
@@ -105,13 +99,9 @@ dd, dt {
 }
 #upload-form-wrapper #id_location_map {
     margin: 0 auto;
-}
-#upload-form-wrapper #step2,
-#upload-form-wrapper #step3 {
-    display: none;
+    max-width: 700px;
 }
 .data-upload-form #id_location_map {
-    max-width: 700px;
 }
 /* Intro JS number breaks if it doesn't have a normal line height */
 .introjs-helperNumberLayer {
@@ -119,6 +109,7 @@ dd, dt {
     font-size: 10px !important;
 }
 
+#hot-example-wrapper,
 #hot-wrapper {
     -webkit-box-align:center;
     -webkit-box-pack:center;
@@ -127,10 +118,12 @@ dd, dt {
     -moz-box-pack:center;
     display:-moz-box;
     margin-bottom: 15px;
+    margin-left: -10%; /* Must correspond to .step margin */
 }
 #hot {
     display: block;
     text-align: left;
+    max-height: 500px;
 }
 
 /* Throbber */
@@ -174,14 +167,6 @@ dd, dt {
 }
 #showExamples {
     margin: 0 0 15px 0;
-}
-.hot-example-wrapper {
-    -webkit-box-align:center;
-    -webkit-box-pack:center;
-    display:-webkit-box;
-    -moz-box-align:center;
-    -moz-box-pack:center;
-    display:-moz-box;
 }
 
 #survey_area {

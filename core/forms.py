@@ -60,8 +60,14 @@ class ProfileUpdateForm(forms.ModelForm):
         return profile
 
 
-class PopulationDataCreateForm(forms.Form):
+class PopulationDataCreateForm(forms.ModelForm):
+    # The location map needs to get prepopulated with the project area, so it can't be included in fields (below)
     location = forms.PolygonField(widget=LeafletWidget(), label='')
+
+    class Meta:
+        model = models.PopulationData
+        fields = ('survey_type', 'hours')
+        widgets = {'survey_type': forms.SelectMultiple(choices=models.PopulationData.SURVEY_TYPE_CHOICES)}
 
     def __init__(self, *args, **kwargs):
         if 'project_polygon' in kwargs:

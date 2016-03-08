@@ -5,7 +5,7 @@ from django.contrib.auth.models import User, Group
 from django.utils import formats
 from mptt.models import MPTTModel, TreeForeignKey
 import re
-from django.contrib.postgres.fields import IntegerRangeField
+from django.contrib.postgres.fields import IntegerRangeField, ArrayField
 
 map_help = '<a href="#" onClick="startIntro()"  data-toggle="tooltip" data-placement="right" title="Click to ' \
            'learn how to use our maps">Learn how to use the map. You can load a KML or GPX, or draw a shape manually\
@@ -94,9 +94,8 @@ class Project(models.Model):
     operational_date = models.DateField(null=True, blank=True, help_text='The day on which building is complete (e.g. the turbines are revolving)')
     construction_date = models.DateField(null=True, blank=True, help_text='The day on which construction starts')
 
-    # Turbine location needs to be stored as points, solar panels are polygons
+    # Turbine locations need to be stored as points, solar panels are the entire project area
     turbine_locations = models.MultiPointField(null=True, blank=True)
-    #solar_locations = models.PolygonField(null=True, blank=True)
 
     # Store info about the turbines/solar panels
     equipment_make = models.ForeignKey(EquipmentMake, null=True, blank=True, help_text='The make and brand of the equipment')
@@ -417,6 +416,27 @@ class Document(models.Model):
 taxon_help_text = 'Identify to genus or <br>species, or select Unknown'
 observed_help_text = 'Date<br>observed'
 
+"""
+class SurveyType(models.Model):
+    WALKED_TRANSECT = 'W'
+    DRIVEN_TRANSECT = 'D'
+    STATIC_POINT = 'P'
+    CENSUS = 'C'
+    INCIDENTAL = 'I'
+    RADAR = 'R'
+    SURVEY_TYPE_CHOICES = (
+        (WALKED_TRANSECT, 'Walked transect'),
+        (DRIVEN_TRANSECT, 'Driven transect'),
+        (STATIC_POINT, 'Static point'),
+        (CENSUS, 'Census'),
+        (INCIDENTAL, 'Incidental'),
+        (RADAR, 'Radar'),
+    )
+    survey_type = models.CharField(max_length=1, choices=SURVEY_TYPE_CHOICES)
+
+    def __str__(self):
+        return self.get_survey_type_display()"""
+
 
 class PopulationData(models.Model):
     """
@@ -454,6 +474,24 @@ class PopulationData(models.Model):
     location = models.PolygonField()
     objects = models.GeoManager()
 
+    #survey_type = models.ManyToManyField(SurveyType, help_text='Type of survey(s) used during data collection', null=True, blank=True)
+    hours = models.IntegerField(help_text='The number of hours spent doing the surveys')
+
+    WALKED_TRANSECT = 'W'
+    DRIVEN_TRANSECT = 'D'
+    STATIC_POINT = 'P'
+    CENSUS = 'C'
+    INCIDENTAL = 'I'
+    RADAR = 'R'
+    SURVEY_TYPE_CHOICES = (
+        (WALKED_TRANSECT, 'Walked transect'),
+        (DRIVEN_TRANSECT, 'Driven transect'),
+        (STATIC_POINT, 'Static point'),
+        (CENSUS, 'Census'),
+        (INCIDENTAL, 'Incidental'),
+        (RADAR, 'Radar'),
+    )
+    survey_type = ArrayField(models.CharField(max_length=1, default=CENSUS, choices=SURVEY_TYPE_CHOICES), null=True, blank=True)
 
     # Birds only:
     # density_km = models.DecimalField(max_digits=10, decimal_places=5)  # Estimate of density per km^2
@@ -501,9 +539,11 @@ class FocalSiteData(models.Model):
     LIFE_STAGE_CHOICES = (
         ('C', 'Chick/pup'),
         ('J', 'Juvenile'),
-        ('A', 'Adult')
+        ('A', 'Adult'),
+        ('U', 'Unknown'),
     )
-    life_stage = models.CharField(max_length=1, choices=LIFE_STAGE_CHOICES, default='A', help_text=life_stage_help)
+    life_stage = models.CharField(max_length=1, choices=LIFE_STAGE_CHOICES, default='A', help_text=life_stage_help,
+                                  null=True, blank=True)
 
     # Only applicable to birds
     activity_choices_help = 'Activity (only <br>applicable to birds)'
@@ -517,6 +557,10 @@ class FocalSiteData(models.Model):
         ('PFY', 'Parents feeding young in nest'),
         ('PFS', 'Parents with fecal sac'),
         ('PAY', 'Parents and young not in nest'),
+        ('NES', 'Nesting'),
+        ('FOR', 'Foraging'),
+        ('RES', 'Resting'),
+        ('TRA', 'Travelling'),
         ('NON', 'None')
     )
     activity = models.CharField(max_length=3, choices=ACTIVITY_CHOICES, null=True, blank=True,

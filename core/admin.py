@@ -113,6 +113,7 @@ admin.site.register(models.Project, admin.ModelAdmin)
 
 # Focal sites
 admin.site.register(models.FocalSite, admin.ModelAdmin)
+admin.site.register(models.PopulationData, admin.ModelAdmin)
 
 # Adminsite customisation
 admin.site.site_header = "Administration"
