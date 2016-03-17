@@ -22,11 +22,11 @@
 {% endblock %}
 
 {% block table %}
+  <hr>
   <!-- Population map -->
-  <h4>Survey area for dataset
-  {% if not project_area %}
-    <small>Area surveyed was entire project area</small>
-  {% endif %}
+  <h4>Survey area for dataset{% if not survey_area %} (project area){% endif %}
+    <small>Data was collected over <strong>{{ population_metadata.get_hours_display }}</strong>, on:
+      <strong>{{ population_metadata.get_survey_type_display }}</strong></small>
   </h4>
   {% leaflet_map "survey_area" callback="main_map_init" %}
 
@@ -71,8 +71,18 @@ function main_map_init(map, options) {
     p.addTo(map);
     {% endif %}
 
+    {% if survey_area %}
+    var survey_style = { fillOpacity: 0.7,
+                          fillColor: '#ffc6c6',
+                          weight: 1,
+                          color: '#ffc6c6' };
+    var p = new L.geoJson({% autoescape off %}{{ survey_area }}{% endautoescape %},
+                          {style: survey_style});
+    p.addTo(map);
+    {% endif %}
+
     // Fit the map bounds to the
-    map.fitBounds(s.getBounds());
+    map.fitBounds(p.getBounds());
 
     {% if turbine_locations %}
     // Add the turbine points (if there are any)

@@ -28,25 +28,28 @@ def population_data_create(request, project_pk):
                            models.PopulationData.flight_height_help],
                'count_types': list(models.PopulationData.ABUNDANCE_TYPE_CHOICES)}
 
-    # Sort out the location form, dealing with this separately for clarity
+    # Process the submitted data
     if request.is_ajax():
-        # Check the location to make sure it's valid
-        location_form = forms.PopulationDataCreateForm(request.POST)
-        if not location_form.is_valid():
-            return JsonResponse(location_form.errors, status=400)
-    else:
-        context['map_form'] = forms.PopulationDataCreateForm(project_polygon=project.location)
+        # First, the population metadata form (location, survey type, hours)
+        population_metadata_form = forms.PopulationMetaDataCreateForm(request.POST)
 
-    # Process the handsontable data
-    if request.is_ajax():
-        # Retrieve the hot_data
-        hot_data = json.loads(request.POST['hot_data'])
+        # Run basic validation and return any errors
+        if not population_metadata_form.is_valid():
+            return JsonResponse(population_metadata_form.errors, status=400)
 
         # Create the metadata
         metadata = models.MetaData(project=project, uploader=request.user)
         metadata.save()
 
-        # We mustn't save anything unless they are all ok, so wrap in a try
+        # The metadata specific to population type data can get saved at this point
+        population_metadata = population_metadata_form.save(commit=False)
+        population_metadata.metadata = metadata
+        population_metadata.save()
+
+        # Retrieve the hot_data
+        hot_data = json.loads(request.POST['hot_data'])
+
+        # We sometimes get validation errors, so wrap in a try
         try:
             objects = []
             for row in hot_data:
@@ -82,8 +85,7 @@ def population_data_create(request, project_pk):
                                             taxon=taxon,
                                             observed=observed,
                                             abundance=count,
-                                            abundance_type=abundance_type,
-                                            location=request.POST['location'])
+                                            abundance_type=abundance_type)
 
                 # Flight height integer range
                 if row[5]:
@@ -103,11 +105,14 @@ def population_data_create(request, project_pk):
         except ValueError as e:
             # Delete the metadata
             metadata.delete()
+            population_metadata.delete()
 
             # Send error back to form
             return JsonResponse({'error': e.args()}, status=400)
 
-    # Otherwise, if we are showing the page for the first time...
+    # Otherwise, if we are showing the page for the first time, make the form
+    context['map_form'] = forms.PopulationMetaDataCreateForm(project_polygon=project.location)
+
     # Get all the taxa
     taxa = models.Taxon.objects.filter(rank__in=[models.Taxon.GENUS, models.Taxon.SPECIES, models.Taxon.SUBSPECIES]) | \
            models.Taxon.objects.filter(id=0)

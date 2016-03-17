@@ -54,7 +54,8 @@ class Developer(models.Model):
 
 class EquipmentMake(models.Model):
     """Normalising the turbine make to avoid typos and to make it easier to search by turbine make."""
-    name = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=50, unique=True, help_text='Enter name of equipment make. For solar panels add '
+                                                                  '"PV" or "HCPV" to the make.')
 
     def __str__(self):
         return self.name
@@ -91,8 +92,8 @@ class Project(models.Model):
     energy_type = models.CharField(max_length=1, choices=ENERGY_TYPE_CHOICES, default=WIND, help_text='The type of renewable energy')
 
     # Operation details
-    operational_date = models.DateField(null=True, blank=True, help_text='The day on which building is complete (e.g. the turbines are revolving)')
-    construction_date = models.DateField(null=True, blank=True, help_text='The day on which construction starts')
+    operational_date = models.DateField(null=True, blank=True, help_text='E.g. The day on which the turbines first began revolving')
+    construction_date = models.DateField(null=True, blank=True, help_text='The date construction began on the project')
 
     # Turbine locations need to be stored as points, solar panels are the entire project area
     turbine_locations = models.MultiPointField(null=True, blank=True)
@@ -100,7 +101,7 @@ class Project(models.Model):
     # Store info about the turbines/solar panels
     equipment_make = models.ForeignKey(EquipmentMake, null=True, blank=True, help_text='The make and brand of the equipment')
     capacity = models.DecimalField(null=True, blank=True, max_digits=6, decimal_places=2, help_text='Nameplate capacity of the project')
-    equipment_height = models.DecimalField(null=True, blank=True, max_digits=6, decimal_places=2)
+    equipment_height = IntegerRangeField(help_text="The collision risk range. Drag slider handlers to move range", null=True, blank=True)
 
     def get_absolute_url(self):
         return reverse('project_update_operational_info', kwargs={'pk': self.pk})
@@ -125,9 +126,6 @@ class Project(models.Model):
         if self.turbine_locations:
             if not self.location.contains(self.turbine_locations):
                 raise ValidationError({'turbine_locations': 'Turbine locations must be within the project bounds.'})
-        #elif self.solar_panel_locations:
-        #    if not self.location.contains(self.solar_panel_locations):
-        #        raise ValidationError({'solar_panel_locations': 'Solar panel locations must be within the project bounds.'})
 
     class Meta:
         permissions = (
@@ -227,7 +225,7 @@ class Taxon(MPTTModel):
     class MPTTMeta:
         order_insertion_by = ['name']
 
-    # This might need to chagne back to just self.name
+    # This might need to change back to just self.name
     def __str__(self):
         if self.vernacular_name:
             return self.name + ' (' + self.vernacular_name + ')'
@@ -416,8 +414,14 @@ class Document(models.Model):
 taxon_help_text = 'Identify to genus or <br>species, or select Unknown'
 observed_help_text = 'Date<br>observed'
 
-"""
-class SurveyType(models.Model):
+
+class PopulationMetaData(models.Model):
+    metadata = models.OneToOneField(MetaData, on_delete=models.CASCADE, primary_key=True)
+    location = models.PolygonField()
+    objects = models.GeoManager()
+
+    hours = models.IntegerField(help_text='The number of hours spent gathering the data')
+
     WALKED_TRANSECT = 'W'
     DRIVEN_TRANSECT = 'D'
     STATIC_POINT = 'P'
@@ -432,10 +436,30 @@ class SurveyType(models.Model):
         (INCIDENTAL, 'Incidental'),
         (RADAR, 'Radar'),
     )
-    survey_type = models.CharField(max_length=1, choices=SURVEY_TYPE_CHOICES)
+    survey_types = ArrayField(models.CharField(max_length=1, default=CENSUS, choices=SURVEY_TYPE_CHOICES), null=True,
+                              blank=True)
 
-    def __str__(self):
-        return self.get_survey_type_display()"""
+    def get_hours_display(self):
+        if self.hours == 1:
+            return str(self.hours) + ' hour'
+        else:
+            return str(self.hours) + ' hours'
+
+    # Used in templates to get a verbose list of survey types
+    def get_survey_type_display(self):
+        # Used to look up the verbose name
+        lookup_survey_type = dict(PopulationMetaData.SURVEY_TYPE_CHOICES)
+
+        # Loop over and get each verbose name
+        verbose_survey_types = []
+        for t in self.survey_types:
+            verbose_survey_types.append(lookup_survey_type[t])
+
+        # Return something readable
+        if len(verbose_survey_types) == 1:
+            return verbose_survey_types[0]
+        else:
+            return ' & '.join([', '.join(verbose_survey_types[:-1]), verbose_survey_types[-1]])
 
 
 class PopulationData(models.Model):
@@ -460,7 +484,8 @@ class PopulationData(models.Model):
         (ABSOLUTE, 'Absolute')
     )
     abundance_type_help = 'Abundance<br>type'
-    abundance_type = models.CharField(max_length=1, choices=ABUNDANCE_TYPE_CHOICES, default='R', help_text=abundance_type_help)
+    abundance_type = models.CharField(max_length=1, choices=ABUNDANCE_TYPE_CHOICES, default='R',
+                                      help_text=abundance_type_help)
 
     flight_height_help = 'Bird flight/Bat equipment<br>height range (m) Format: "x-y" - e.g. "0-1".'
     flight_height = IntegerRangeField(help_text=flight_height_help, null=True, blank=True)
@@ -471,37 +496,12 @@ class PopulationData(models.Model):
         else:
             return ''
 
-    location = models.PolygonField()
-    objects = models.GeoManager()
-
-    #survey_type = models.ManyToManyField(SurveyType, help_text='Type of survey(s) used during data collection', null=True, blank=True)
-    hours = models.IntegerField(help_text='The number of hours spent doing the surveys')
-
-    WALKED_TRANSECT = 'W'
-    DRIVEN_TRANSECT = 'D'
-    STATIC_POINT = 'P'
-    CENSUS = 'C'
-    INCIDENTAL = 'I'
-    RADAR = 'R'
-    SURVEY_TYPE_CHOICES = (
-        (WALKED_TRANSECT, 'Walked transect'),
-        (DRIVEN_TRANSECT, 'Driven transect'),
-        (STATIC_POINT, 'Static point'),
-        (CENSUS, 'Census'),
-        (INCIDENTAL, 'Incidental'),
-        (RADAR, 'Radar'),
-    )
-    survey_type = ArrayField(models.CharField(max_length=1, default=CENSUS, choices=SURVEY_TYPE_CHOICES), null=True, blank=True)
-
-    # Birds only:
-    # density_km = models.DecimalField(max_digits=10, decimal_places=5)  # Estimate of density per km^2
-    # passage_rate = models.DecimalField(max_digits=7, decimal_places=2)  # Number passing through area per hour
-
     def get_absolute_url(self):
         return reverse('project_detail', kwargs={'pk': self.pk})
 
     def __str__(self):
-        return str(self.abundance) + ' ' + self.taxon.name + ' seen on ' + formats.date_format(self.observed, "DATETIME_FORMAT")
+        return str(self.abundance) + ' ' + self.taxon.name + ' seen on ' + formats.date_format(self.observed,
+                                                                                               "DATETIME_FORMAT")
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -583,16 +583,21 @@ class FatalityData(models.Model):
     objects = models.GeoManager()
 
     cause_of_death_choices = (
-        ('T', 'Turbine'),
-        ('R', 'Road'),
-        ('S', 'Solar panel'),
-        ('E', 'Power lines (electric)'),
-        ('N', 'Natural'),
-        ('P', 'Predation'),
-        ('U', 'Undetermined')
+        ('TT', 'Turbine tower'),
+        ('TB', 'Turbine blade'),
+        ('RO', 'Road'),
+        ('SF', 'Solar flux'),
+        ('PV', 'Solar PV panel collision'),
+        ('HE', 'Solar heliostat collision'),
+        ('SB', 'Solar beam collision'),
+        ('PE', 'Power line electrocution'),
+        ('PC', 'Power line collision'),
+        ('NA', 'Natural'),
+        ('PR', 'Predation'),
+        ('UN', 'Undetermined')
     )
     cause_of_death_help = 'Specify cause of death'
-    cause_of_death = models.CharField(max_length=1, choices=cause_of_death_choices, help_text=cause_of_death_help)
+    cause_of_death = models.CharField(max_length=2, choices=cause_of_death_choices, help_text=cause_of_death_help)
 
     def clean(self):
         # Coordinate cannot be outside the bounds of the project

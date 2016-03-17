@@ -137,14 +137,14 @@
 <script type="text/javascript">
 // Widths of the columns - this is also used for hot-examples.js included later
 widths = [240, 50, 100, 90, 80, 200];
-$(document).ready(function() { console.log(L.Browser.touch);
+$(document).ready(function() {
     // Tooltips
     $(function () {
       $('[data-toggle="tooltip"]').tooltip()
     })
 
     // Chosen
-    $("select#id_survey_type").chosen();
+    $("select#id_survey_types").chosen();
 
     // Handsontable options
     hotOptions['colWidths'] = widths;

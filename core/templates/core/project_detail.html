@@ -35,14 +35,14 @@
         <tr>
           <th>Make</th>
           <th>Capacity</th>
-          <th>Height</th>
+          <th>Equipment height range</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td>{{ project.equipment_make }}</td>
           <td>{{ project.capacity }}</td>
-          <td>{{ project.equipment_height }}</td>
+          <td>{{ project.equipment_height.lower }}-{{ project.equipment_height.upper }}m</td>
         </tr>
       </tbody>
     </table>

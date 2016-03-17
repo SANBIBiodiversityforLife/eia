@@ -154,11 +154,6 @@ def project_detail(request, pk):
     context['project_location'] = serialize('geojson', [project], geometry_field='location', fields=('location',))
 
     # Get the equipment locations
-    '''if project.solar_locations:
-        context['solar_geojson'] = serialize('geojson',
-                                             [project],
-                                             geometry_field='solar_locations',
-                                             fields=('solar_locations',))'''
     if project.turbine_locations:
         context['turbine_geojson'] = serialize('geojson',
                                                [project],

@@ -13,7 +13,7 @@ from core.serializers import CustomGeoJSONSerializer, FocalSiteJSONSerializer
 from django.contrib.gis.measure import D
 
 
-def dataset_display_helper(request, metadata_ids, metadata_pk, data_model, data_form):
+def dataset_display_helper(request, metadata_ids, metadata_pk, data_model):
     # Retrieve the metadata objects
     metadata = models.MetaData.objects.filter(id__in=metadata_ids)
 
@@ -24,11 +24,11 @@ def dataset_display_helper(request, metadata_ids, metadata_pk, data_model, data_
         metadata_for_display = request.POST['datasets']
 
         # Create a form instance and populate it with the post data so the right option is selected
-        form = data_form(request.POST, metadata=metadata)
+        form = forms.DataViewForm(request.POST, metadata=metadata)
     # Otherwise, if we are showing the page for the first time...
     else:
         # Create a form with the list of metadata for selection with any preselected options (passed through admin)
-        form = data_form(metadata=metadata)
+        form = forms.DataViewForm(metadata=metadata)
         if metadata_pk:
             form.fields['datasets'].initial = metadata_pk
             metadata_for_display = metadata_pk
@@ -67,8 +67,7 @@ def population_data(request, pk, metadata_pk=None):
         response_data = dataset_display_helper(request=request,
                                                metadata_ids=metadata_ids,
                                                metadata_pk=metadata_pk,
-                                               data_model=models.PopulationData.objects,
-                                               data_form=forms.DataViewForm)
+                                               data_model=models.PopulationData.objects)
     else:
         response_data = {}
 
@@ -77,12 +76,17 @@ def population_data(request, pk, metadata_pk=None):
 
     # If we have any data to display
     if 'data_set' in response_data:
-        # If the survey area is different to the project area we need to display both
-        if response_data['project'].location != response_data['data_set'][0].location:
-            response_data['project_area'] = serialize('geojson', [response_data['project']], geometry_field='location', fields=('location',))
+        # Add the project area
+        response_data['project_area'] = serialize('geojson', [response_data['project']], geometry_field='location', fields=('location',))
 
-        # Geojson the survey area - note they are the same for the entire dataset
-        response_data['survey_area'] = serialize('geojson', [response_data['data_set'][0]], geometry_field='location', fields=('location',))
+        # Get the population specific metadata
+        response_data['population_metadata'] = models.PopulationMetaData.objects.get(
+            metadata__pk=response_data['metadata_pk'])
+
+        # Is the survey area the same as the project area? If not then we need to display survey area too
+        if response_data['project'].location != response_data['population_metadata'].location:
+            response_data['survey_area'] = serialize('geojson', [response_data['population_metadata']],
+                                                     geometry_field='location', fields=('location',))
 
     # Render the context
     return render_to_response('core/population_data_list.html',
@@ -105,8 +109,7 @@ def focal_site_data(request, pk, focal_site_pk=None, metadata_pk=None):
             response_data = dataset_display_helper(request=request,
                                                    metadata_ids=metadata_ids,
                                                    metadata_pk=metadata_pk,
-                                                   data_model=models.FocalSiteData.objects,
-                                                   data_form=forms.DataViewForm)
+                                                   data_model=models.FocalSiteData.objects)
 
         # We need to know which one has been selected for the map
         response_data['focal_site_pk'] = focal_site_pk
@@ -158,8 +161,7 @@ def fatality_data(request, pk, metadata_pk=None):
         response_data = dataset_display_helper(request=request,
                                                metadata_ids=metadata_ids,
                                                metadata_pk=metadata_pk,
-                                               data_model=models.FatalityData.objects,
-                                               data_form=forms.DataViewForm)
+                                               data_model=models.FatalityData.objects)
 
         # Add some mapping data
         # Do we need some kind of permissions thing here? Does it matter if dead sensitive species are shown?

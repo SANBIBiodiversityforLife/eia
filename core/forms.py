@@ -7,6 +7,7 @@ import calendar
 # This needs to get changed for Django 1.9 to from django.forms import SelectDateWidget
 from django.forms.extras import SelectDateWidget
 
+from django.utils.datastructures import MultiValueDict
 
 class SignupForm(forms.ModelForm):
     first_name = forms.CharField(max_length=100)
@@ -60,22 +61,52 @@ class ProfileUpdateForm(forms.ModelForm):
         return profile
 
 
-class PopulationDataCreateForm(forms.ModelForm):
+class ArrayFieldSelectMultiple(forms.SelectMultiple):
+    """This is a Form Widget for use with a Postgres ArrayField. It implements
+    a multi-select interface that can be given a set of `choices`.
+    You can provide a `delimiter` keyword argument to specify the delimeter used.
+    """
+    def __init__(self, *args, **kwargs):
+        # Accept a `delimiter` argument, and grab it (defaulting to a comma)
+        self.delimiter = kwargs.pop("delimiter", ",")
+        super(ArrayFieldSelectMultiple, self).__init__(*args, **kwargs)
+
+    def render_options(self, choices, value):
+        # value *should* be a list, but it might be a delimited string.
+        if isinstance(value, str):  # python 2 users may need to use basestring instead of str
+            value = value.split(self.delimiter)
+        return super(ArrayFieldSelectMultiple, self).render_options(choices, value)
+
+    def value_from_datadict(self, data, files, name):
+        if isinstance(data, MultiValueDict):
+            # Normally, we'd want a list here, which is what we get from the
+            # SelectMultiple superclass, but the SimpleArrayField expects to
+            # get a delimited string, so we're doing a little extra work.
+            return self.delimiter.join(data.getlist(name))
+        return data.get(name, None)
+
+
+class PopulationMetaDataCreateForm(forms.ModelForm):
     # The location map needs to get prepopulated with the project area, so it can't be included in fields (below)
-    location = forms.PolygonField(widget=LeafletWidget(), label='')
+    #location = forms.PolygonField(widget=LeafletWidget(), label='')
 
     class Meta:
-        model = models.PopulationData
-        fields = ('survey_type', 'hours')
-        widgets = {'survey_type': forms.SelectMultiple(choices=models.PopulationData.SURVEY_TYPE_CHOICES)}
+        model = models.PopulationMetaData
+        fields = ('survey_types', 'hours', 'location')
+        widgets = {'survey_types': ArrayFieldSelectMultiple(choices=models.PopulationMetaData.SURVEY_TYPE_CHOICES),
+                   'location': LeafletWidget()}
 
     def __init__(self, *args, **kwargs):
         if 'project_polygon' in kwargs:
             project_polygon = kwargs.pop('project_polygon')
-            super(PopulationDataCreateForm, self).__init__(*args, **kwargs)
+            super(PopulationMetaDataCreateForm, self).__init__(*args, **kwargs)
             self.fields['location'].initial = project_polygon
         else:
-            super(PopulationDataCreateForm, self).__init__(*args, **kwargs)
+            super(PopulationMetaDataCreateForm, self).__init__(*args, **kwargs)
+
+    '''def clean(self):
+
+        import pdb; pdb.set_trace()'''
 
 
 class ProjectCreateForm(forms.ModelForm):
@@ -131,18 +162,8 @@ class ProjectUpdateOperationalInfoForm(forms.ModelForm):
                   'capacity',
                   'equipment_height',
                   'turbine_locations',
-                  #'solar_locations'
                   )
-        widgets = {'turbine_locations': LeafletWidget(),
-                   #'solar_locations': LeafletWidget()
-                   }
-        help_texts = {
-            'operational_date': 'The date the project first became operational',
-            'construction_date': 'The date construction began on the project',
-            'equipment_make': 'The make of the turbines/solar panels',
-            'equipment_capacity': 'The capacity of the turbines/solar panels',
-            'equipment_height': 'The height of the turbines/solar panels',
-        }
+        widgets = {'turbine_locations': LeafletWidget()}
 
     def __init__(self, *args, **kwargs):
         energy_type = kwargs.pop('energy_type')
@@ -150,8 +171,6 @@ class ProjectUpdateOperationalInfoForm(forms.ModelForm):
 
         if energy_type == models.Project.SOLAR:
             del self.fields['turbine_locations']
-        #elif energy_type == models.Project.WIND:
-        #    del self.fields['solar_locations']
 
 
 class ProjectUpdateForm(forms.ModelForm):

@@ -10,6 +10,8 @@
 <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'leaflet-awesome-markers/dist/leaflet.awesome-markers.css' %}">
 <script src="{% static 'leaflet-awesome-markers/dist/leaflet.awesome-markers.min.js' %}"></script>
+
+<link href='{% static "nouislider/nouislider.min.css" %}' rel="stylesheet">
 {% endblock css %}
 
 {% block breadcrumb %}
@@ -93,6 +95,9 @@
 <!-- Turbine markers -->
 <script src='{% static "core/js/leaflet_turbine_markers.js" %}'></script>
 
+
+<script src='{% static "nouislider/nouislider.min.js" %}'></script>
+
 <script language="javascript">
   $(document).ready(function() {
     // Store references to the maps for later use
@@ -144,6 +149,46 @@
     }
     $('#equipmentForm').ajaxForm(options);
     // TODO add form validation
+
+    // Integer range for equipment height generates two text inputs which must be hidden as we are using a slider
+    $('#id_equipment_height_0').hide();
+    $('#id_equipment_height_1').hide();
+
+    // Give the slider a bit of padding on top
+    $('#id_equipment_height_0').parent().css('margin-top', '15px');
+
+    // Add the slider element into the code
+    $('#id_equipment_height_0').parent().prepend('<div id="heightSlider"></div>');
+
+    // Initiate using javascript
+    var heightSlider = document.getElementById('heightSlider');
+    noUiSlider.create(heightSlider, {
+      start: [ $('#id_equipment_height_0').val(), $('#id_equipment_height_1').val() ],
+      connect: true,
+	    step: 5,
+      range: {
+        'min': [  0 ],
+        'max': [ 50 ]
+      }
+    });
+
+    // Add tooltips to the slider handles
+    $('.noUi-handle-lower').attr('data-trigger','manual');
+    $('.noUi-handle-lower').tooltip('show');
+    $('.noUi-handle-upper').attr('data-trigger','manual');
+    $('.noUi-handle-upper').tooltip('show');
+
+    // Update the tooltips and the hidden text inputs when the slider handles move
+    heightSlider.noUiSlider.on('update', function( values, handle ) {
+      var value = Math.round(values[handle]);
+      if(handle) {
+        $('#id_equipment_height_1').val(value);
+        $('.noUi-handle-upper').attr('data-original-title', value + 'm').tooltip('show');
+      } else {
+        $('#id_equipment_height_0').val(value);
+        $('.noUi-handle-lower').attr('data-original-title', value + 'm').tooltip('show');
+      }
+    });
   })
 </script>
 {% endblock %}
