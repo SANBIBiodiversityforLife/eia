@@ -109,7 +109,7 @@ dd, dt {
     font-size: 10px !important;
 }
 
-#hot-example-wrapper,
+.hot-example-wrapper,
 #hot-wrapper {
     -webkit-box-align:center;
     -webkit-box-pack:center;
@@ -117,8 +117,10 @@ dd, dt {
     -moz-box-align:center;
     -moz-box-pack:center;
     display:-moz-box;
-    margin-bottom: 15px;
     margin-left: -10%; /* Must correspond to .step margin */
+}
+#hot-wrapper {
+    margin-bottom: 15px;
 }
 #hot {
     display: block;

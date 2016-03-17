@@ -257,7 +257,7 @@ class FocalSite(models.Model):
         (COURTSHIP, 'Display/courtship area'),
         (FEEDING, 'Feeding ground'),
         (OTHER, 'Other'),
-        (NOT_SPECIFIED, 'N')
+        (NOT_SPECIFIED, 'Not specified')
     )
     activity = models.CharField(max_length=1, choices=activity_choices)
 
