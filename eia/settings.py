@@ -121,8 +121,8 @@ DATABASES = {
          'ENGINE': 'django.contrib.gis.db.backends.postgis',
          'NAME': 'eia_tool',
          'USER': 'postgres',
-         'PASSWORD': 'root',
-         'PORT': '5433',
+         'PASSWORD': 'admin', # root
+         'PORT': '5432',
      }
 }
 

@@ -69,10 +69,33 @@
 {% block success-url %}{% url 'fatality_data' project.id %}{% endblock %}
 
 {% block sub-js %}
+<!-- Reformats time so multiple time formats can be pasted in e.g. 23h00 -->
+<script src='{% static "core/js/clean_time.js" %}'></script>
+
+<!-- Handsontable options -->
 <script type="text/javascript">
 // Widths of the columns - this is also used for hot-examples.js included later
 widths = [240, 100, 90, 90, 90, 180];
 $(document).ready(function() {
+    // Run to pass in the correct value to the validator
+    // Should be able to remove it once https://github.com/handsontable/handsontable/issues/3402 is resolved
+    hotOptions['beforeValidate'] = function (value, row, prop, source) {
+        if(prop == 2) {
+            val = cleanTime(value);
+            return val;
+        }
+    };
+
+    // Should change cell value before validation, but currently does not
+    hotOptions['beforeChange'] = function (changes, source) {
+        for(var i = changes.length - 1; i >= 0; i--) {
+          if(changes[i][1] === 2) {
+            val = cleanTime(changes[i][3]);
+            changes[i][3] = val;
+          }
+        }
+    };
+
     // Handsontable options
     hotOptions['colWidths'] = widths;
     hotOptions['columns'] = [

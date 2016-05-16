@@ -132,12 +132,17 @@
 <script src='{% static "temp-leaflet.forms.js" %}'></script> <!-- Temporary until update -->
 <script src='{% static "core/js/eia-filelayer.js" %}'></script>
 
-<!-- Hands On Table, Tooltips and Chosen -->
+<!-- Chosen -->
 <script src='{% static "chosen/chosen.jquery.min.js" %}'></script>
+
+<!-- Reformats time so multiple time formats can be pasted in e.g. 23h00 -->
+<script src='{% static "core/js/clean_time.js" %}'></script>
+
+<!-- Hands On Table and Tooltips -->
 <script type="text/javascript">
 // Widths of the columns - this is also used for hot-examples.js included later
 widths = [240, 50, 100, 90, 80, 200];
-$(document).ready(function() { console.log('hi');
+$(document).ready(function() {
     // Tooltips
     $(function () {
       $('[data-toggle="tooltip"]').tooltip()
@@ -146,27 +151,23 @@ $(document).ready(function() { console.log('hi');
     // Chosen
     $("select#id_survey_types").chosen();
 
-    // Time validator
-    function validateTime(value, callback) {
-      console.log('validating time');
-      cleanedValue = value.replace(/\s*hr?\s*|\s*:\s*/, '.');
-      setTimeout(function(){
-        if (/^([01]?[0-9]|2[0-3])$/.test(cleanedValue)) {
-          callback(true);
+    // Run to pass in the correct value to the validator
+    // Should be able to remove it once https://github.com/handsontable/handsontable/issues/3402 is resolved
+    hotOptions['beforeValidate'] = function (value, row, prop, source) {
+        if(prop == 3) {
+            val = cleanTime(value);
+            return val;
         }
-        else {
-          callback(false);
-        }
-      }, 1000);
-    }
+    };
+
+    // Should change cell value before validation, but currently does not
     hotOptions['beforeChange'] = function (changes, source) {
-      for(var i = changes.length - 1; i >= 0; i--) {
-        console.log(changes[i]);
-        if(changes[i][1] === 3) {
-          changes[i][3] = changes[i][3].charAt(0).toUpperCase() + changes[i][3].slice(1);
+        for(var i = changes.length - 1; i >= 0; i--) {
+          if(changes[i][1] === 3) {
+            changes[i][3] = cleanTime(changes[i][3]);
+          }
         }
-      }
-    },
+    };
 
     // Handsontable options
     hotOptions['colWidths'] = widths;
@@ -191,8 +192,7 @@ $(document).ready(function() { console.log('hi');
         type: 'numeric',
         format: '00',
         default: '00',
-        // validator: /^([01]?[0-9]|2[0-3])$/
-        validator: validateTime,
+        validator: /^([01]?[0-9]|2[0-3])$/
       },
       {
         type: 'autocomplete',
